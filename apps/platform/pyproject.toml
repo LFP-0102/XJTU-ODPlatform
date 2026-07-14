@@ -1,0 +1,44 @@
+# XJTU-ODPlatform - platform端点配置
+
+# 必写:告诉 pip "用什么工具来构建这个包"
+[build-system]
+requires = ["hatchling>= 1.30.1"]
+build-backend = "hatchling.build"
+
+# 项目元信息:名字、版本、依赖、作者……(PEP 621 标准)
+[project]
+name = "od-platform"
+dynamic = ["version"]
+description = "XJTU-ODPlatform - platform端点配置, 目标检测平台核心引擎"
+keywords = ['object-dection','Yolo', '深度学习']
+authors = [
+    { name = "LFP",email = "33132606083@qq.com"  },
+]
+license = { text = "MIT" }
+readme = "README.md"
+requires-python = ">= 3.11"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "colorlog>=6.10.1",      # 日志彩色(③日志工具篇用过)
+    "torch>=2.13.0",         # 深度学习框架
+    "ultralytics>=8.4.92",   # YOLO
+]
+
+
+[project.scripts]
+odp-init = "od_platform.cli.init_project:initialize_project"
+
+[tool.hatch.version]
+path = "src/od_platform/_version.py"
+

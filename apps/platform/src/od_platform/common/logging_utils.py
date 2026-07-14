@@ -1,5 +1,4 @@
 import logging
-from idlelib.iomenu import encoding
 from pathlib import Path
 import sys
 from datetime import datetime
@@ -8,9 +7,6 @@ from typing import Optional
 from colorlog import ColoredFormatter
 
 import platform
-
-from torch.distributed.elastic.utils import log_level
-from torchgen import model
 
 ROOT_LOGGER_NAME: str = "od_platform"
 

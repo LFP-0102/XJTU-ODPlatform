@@ -21,16 +21,16 @@ def _find_workspace_root(
 ROOT_DIR: Path = _find_workspace_root(Path(__file__))
 
 #端的根目录(核心引擎的目录)
-APP_DIR: Path = ROOT_DIR / 'apps' / 'platform'
+APP_DIR: Path = ROOT_DIR / "apps" / "platform"
 
 #共享资产
-DATA_DIR: Path = ROOT_DIR / 'data'
-MODELS_DIR: Path = ROOT_DIR / 'models'
-RUNS_DIR: Path = ROOT_DIR / 'runs'
+DATA_DIR: Path = ROOT_DIR / "data"
+MODELS_DIR: Path = ROOT_DIR / "models"
+RUNS_DIR: Path = ROOT_DIR / "runs"
 
 # 模型的子目录
-PRETRAINED_MODELS_DIR: Path = MODELS_DIR / 'pretrained'
-TRAINED_MODELS_DIR: Path = MODELS_DIR / 'trained'
+PRETRAINED_MODELS_DIR: Path = MODELS_DIR / "pretrained"  # 下载的预训练权重(输入)
+TRAINED_MODELS_DIR: Path = MODELS_DIR / "trained"
 
 # 数据集的目录
 RAW_DATA_DIR: Path = DATA_DIR / 'raw'
@@ -40,10 +40,13 @@ PROCESSED_DATA_DIR: Path = DATA_DIR / 'processed'
 # 端私有资产
 CONFIG_DIR: Path = APP_DIR / 'configs'
 LOGGING_DIR: Path = ROOT_DIR / 'logging'
-UNIT_TEST_DIR: Path = APP_DIR / 'tests'
+UNIT_TEST_DIR: Path = APP_DIR / "tests"
 
-DOC_DIR: Path = ROOT_DIR / 'docs'
-SCRIPTS_DIR: Path = ROOT_DIR / 'scripts'
+DOCS_DIR: Path = ROOT_DIR / "docs"
+SCRIPTS_DIR: Path = ROOT_DIR / "scripts"
+
+META_DIR: Path = ROOT_DIR / ".odp-meta"
+META_LOGGING_DIR = META_DIR / "logging"
 
 # 对外暴露要初始化的目录列表
 def get_dirs_to_initialize() -> List[Path]:
@@ -58,9 +61,48 @@ def get_dirs_to_initialize() -> List[Path]:
         CONFIG_DIR,
         LOGGING_DIR,
         UNIT_TEST_DIR,
-        DOC_DIR,
+        DOCS_DIR,
         SCRIPTS_DIR,
+        META_LOGGING_DIR,
     ]
+
+def get_dirs_to_reset() -> List[Path]:
+    return [
+        PROCESSED_DATA_DIR,
+        RUNS_DIR,
+        TRAINED_MODELS_DIR,
+        LOGGING_DIR,
+        CONFIG_DIR,
+    ]
+
+PROTECTED_DIRS: Tuple[Path, ...] = (
+    ROOT_DIR,
+    ROOT_DIR / "apps",
+    APP_DIR,
+    APP_DIR / "src",
+    SCRIPTS_DIR,
+    DOCS_DIR,
+    UNIT_TEST_DIR,
+    ROOT_DIR / ".git",
+    ROOT_DIR / ".odp-workspace",
+    META_DIR,
+    META_LOGGING_DIR,
+)
+
+
+def is_protected(path: Path) -> bool:
+    path = path.resolve(strict=False)
+
+    for protected in PROTECTED_DIRS:
+        protected_resolved = protected.resolve(strict=False)
+
+        if path == protected_resolved:
+            return True
+
+        if protected_resolved.is_relative_to(path):
+            return True
+
+    return False
 
 if __name__ == '__main__':
     print(f"RO0T DIR: {ROOT_DIR}")

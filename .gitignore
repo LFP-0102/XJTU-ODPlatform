@@ -84,5 +84,5 @@ temp/
 *.npz
 
 # 工具元数据
-.odp-meta
+.odp-meta/
 

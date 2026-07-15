@@ -1,21 +1,21 @@
 from pathlib import Path
 from typing import List,Tuple
 
-WORKSPACE_MARKER: str = '.odp-workspace'
+WORKSPACE_MARKER: str = ".odp-workspace"
 
 def _find_workspace_root(
         start: Path,
-        makers: Tuple[str,...] = (WORKSPACE_MARKER,)
+        markers: Tuple[str,...] = (WORKSPACE_MARKER,)
 ) -> Path:
     """""从start位置开始，沿着目录树向上查找，寻找第一个包含任意一个marker文件的目录"""
     current = start.resolve()
     if current.is_file():
         current = current.parent
     for parent in [current,*current.parents]:
-        for marker in makers:
+        for marker in markers :
             if (parent / marker).exists():
                 return parent
-    raise FileNotFoundError(f"找不到 workspace marker 文件{markers}),"
+    raise FileNotFoundError(f"找不到 workspace marker 文件 {markers},"
                              f"请确认仓库的根存在这个{WORKSPACE_MARKER}文件")
 
 ROOT_DIR: Path = _find_workspace_root(Path(__file__))

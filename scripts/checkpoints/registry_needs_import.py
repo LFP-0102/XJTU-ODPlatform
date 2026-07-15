@@ -9,8 +9,8 @@ for f in list_converters():
     print(get_converter(f).supported_tasks)
 
 names = convert_data_to_yolo(
-    input_dir=Path(r"C:\Users\刘赋平\Desktop\XJTU-ODPlatfrom\data\raw\MRI\annotations"),
-    output_labels_dir=Path(r"C:\Users\刘赋平\Desktop\XJTU-ODPlatfrom\data\processed\coco"),
+    input_dir=Path(r"C:\Users\刘赋平\Desktop\XJTU-ODPlatform\data\raw\MRI\annotations"),
+    output_labels_dir=Path(r"C:\Users\刘赋平\Desktop\XJTU-ODPlatform\data\processed\coco"),
     annotation_format = "coco",
     options=ConvertOptions(task=Task.SEGMENT,classes=[ 'meningioma_tumor', 'pituitary_tumor'])
 )

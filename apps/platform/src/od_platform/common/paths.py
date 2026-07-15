@@ -39,7 +39,7 @@ PROCESSED_DATA_DIR: Path = DATA_DIR / 'processed'
 
 # 端私有资产
 CONFIG_DIR: Path = APP_DIR / 'configs'
-LOGGING_DIR: Path = ROOT_DIR / 'logging'
+LOGGING_DIR: Path = APP_DIR / 'logging'
 UNIT_TEST_DIR: Path = APP_DIR / "tests"
 
 DOCS_DIR: Path = ROOT_DIR / "docs"

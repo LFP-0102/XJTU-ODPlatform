@@ -63,11 +63,8 @@ def _lazy_init() -> None:
     global _LAZY_INITIALIZED
     if _LAZY_INITIALIZED:
         return
-    import importlib
-    import pkgutil
+    from od_platform.common.registry_utils import import_submodules
     from od_platform.data_pipeline.convert import converters
-    for m in pkgutil.iter_modules(converters.__path__):
-        if not m.name.startswith('_'):
-            importlib.import_module(f"{converters.__name__}.{m.name}")
+    import_submodules(converters)
     _LAZY_INITIALIZED = True
 

@@ -16,3 +16,18 @@ class Task:
     @classmethod
     def all(cls):
         return (cls.DETECT, cls.SEGMENT)
+
+class SplitStrategy:
+    """划分策略名集合(拼错当场报错,all() 供遍历;与 AnnotationFormat 同套路)。"""
+    RANDOM = "random"
+    STRATIFIED_MULTILABEL = "stratified_multilabel"
+    @classmethod
+    def all(cls) -> Tuple[str, ...]:
+        return (cls.RANDOM, cls.STRATIFIED_MULTILABEL)
+
+DEFAULT_RANDOM_STATE = 42   # 划分默认种子。四处共享:SplitOptions / split_service / CLI --seed / 回归测试
+DEFAULT_TRAIN_RATE = 0.8    # 四处共享:SplitOptions / split_service / DatasetPipeline / CLI --train-rate
+DEFAULT_VAL_RATE = 0.1      # 同上;test_rate 由 1 - train - val 推出,不单独设常量
+RATE_EPSILON = 1e-6
+DEFAULT_SPLIT_STRATEGY = SplitStrategy.RANDOM
+IMAGE_EXTENSIONS: Tuple[str, ...] = (".jpg", ".jpeg", ".png", ".bmp", ".webp")

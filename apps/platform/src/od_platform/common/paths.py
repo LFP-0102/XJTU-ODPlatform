@@ -38,7 +38,7 @@ PROCESSED_DATA_DIR: Path = DATA_DIR / 'processed'
 
 
 # 端私有资产
-CONFIG_DIR: Path = APP_DIR / 'configs'
+CONFIGS_DIR: Path = APP_DIR / 'configs'
 LOGGING_DIR: Path = APP_DIR / 'logging'
 UNIT_TEST_DIR: Path = APP_DIR / "tests"
 
@@ -47,6 +47,18 @@ SCRIPTS_DIR: Path = ROOT_DIR / "scripts"
 
 META_DIR: Path = ROOT_DIR / ".odp-meta"
 META_LOGGING_DIR = META_DIR / "logging"
+
+DATASET_CONFIGS_DIR: Path = CONFIGS_DIR / "datasets"   # = apps/platform/configs/datasets/
+
+def raw_dataset_root(name: str) -> Path:
+    return RAW_DATA_DIR / name
+
+def dataset_processed_dir(name: str) -> Path:
+    return PROCESSED_DATA_DIR / name              # data/processed/<name>/:只放可再生 images/labels
+
+def dataset_yaml_path(name: str) -> Path:
+    return DATASET_CONFIGS_DIR / f"{name}.yaml"
+
 
 # 对外暴露要初始化的目录列表
 def get_dirs_to_initialize() -> List[Path]:
@@ -58,12 +70,13 @@ def get_dirs_to_initialize() -> List[Path]:
         TRAINED_MODELS_DIR,
         RAW_DATA_DIR,
         PROCESSED_DATA_DIR,
-        CONFIG_DIR,
+        CONFIGS_DIR,
         LOGGING_DIR,
         UNIT_TEST_DIR,
         DOCS_DIR,
         SCRIPTS_DIR,
         META_LOGGING_DIR,
+        DATASET_CONFIGS_DIR
     ]
 
 def get_dirs_to_reset() -> List[Path]:
@@ -72,7 +85,7 @@ def get_dirs_to_reset() -> List[Path]:
         RUNS_DIR,
         TRAINED_MODELS_DIR,
         LOGGING_DIR,
-        CONFIG_DIR,
+        CONFIGS_DIR,
     ]
 
 PROTECTED_DIRS: Tuple[Path, ...] = (
@@ -105,7 +118,7 @@ def is_protected(path: Path) -> bool:
     return False
 
 if __name__ == '__main__':
-    print(f"RO0T DIR: {ROOT_DIR}")
+    print(f"ROOT DIR: {ROOT_DIR}")
     print(f"APP DIR: {APP_DIR}")
     for d in get_dirs_to_initialize():
         print(f"DIR:{d.relative_to(ROOT_DIR)}将要被创建")

@@ -39,6 +39,11 @@ dependencies = [
 [project.scripts]
 odp-init = "od_platform.cli.init_project:initialize_project"
 odp-reset = "od_platform.cli.reset_project:main"
+odp-transform = "od_platform.cli.transform_data:main"
+odp-train = "od_platform.modeling.train:main"
+odp-evaluate = "od_platform.modeling.evaluate:main"
+odp-predict = "od_platform.modeling.predict:main"
+odp-visualize = "od_platform.modeling.visualize:main"
 
 [tool.hatch.version]
 path = "src/od_platform/_version.py"

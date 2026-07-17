@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import List
-import logging
+
 from od_platform.common.paths import ROOT_DIR, get_dirs_to_initialize, LOGGING_DIR, RAW_DATA_DIR
 from od_platform.common.logging_utils import get_logger
 from od_platform.common.performance_utils import time_it

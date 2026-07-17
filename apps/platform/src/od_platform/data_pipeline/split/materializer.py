@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Tuple
 
-from od_platform.common.paths import PROCESSED_DATA_DIR
+from od_platform.common.paths import PROCESS_DATA_DIR
 from od_platform.data_pipeline.split.manifest import SplitManifest
 
 logger = logging.getLogger(__name__)
@@ -18,7 +18,7 @@ def _assert_within(sandbox: Path, target: Path) -> Path:
     except ValueError:
         raise RuntimeError(f"拒绝删除:{target_r} 不在围栏 {sandbox_r} 之内")
     if target_r == sandbox_r:
-        raise RuntimeError(f"拒绝删除围栏根本身:{sandbox_r}")
+        raise RuntimeError(f"拒绝删除围栏本身:{sandbox_r}")
     return target_r
 
 def _safe_clear(target: Path, sandbox: Path) -> None:
@@ -63,8 +63,8 @@ class SplitOutputDirs:
     def for_dataset(cls, dataset: str) -> "SplitOutputDirs":
         if not dataset or "/" in dataset or dataset in (".", ".."):
             raise ValueError(f"非法数据集名:{dataset!r}")
-        root = PROCESSED_DATA_DIR / dataset
-        _assert_within(PROCESSED_DATA_DIR, root)
+        root = PROCESS_DATA_DIR / dataset
+        _assert_within(PROCESS_DATA_DIR, root)
         return cls(root=root)
     @classmethod
     def under(cls, root: Path) -> "SplitOutputDirs":

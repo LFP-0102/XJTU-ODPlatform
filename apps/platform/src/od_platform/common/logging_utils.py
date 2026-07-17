@@ -27,7 +27,7 @@ def get_logger(
     logger.setLevel(log_level)
     logger.propagate = False
 
-    # 准确日志的牡蛎
+    # 准确日志的目录
     log_dir: Path = base_path / log_type
     log_dir.mkdir(parents=True, exist_ok=True)
 

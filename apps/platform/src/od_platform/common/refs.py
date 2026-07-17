@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from od_platform.common.paths import (
-    PRETRAINED_MODELS_DIR, PROCESSED_DATA_DIR, RAW_DATA_DIR, TRAINED_MODELS_DIR, CONFIGS_DIR
+    PRETRAINED_MODELS_DIR, PROCESS_DATA_DIR, RAW_DATA_DIR, TRAINED_MODELS_DIR, CONFIG_DIR
 )
 
 def resolve_ref(ref: str, *, base_dir: Path, default_suffix: Optional[str] = None) -> Path:
@@ -18,12 +18,12 @@ def resolve_ref(ref: str, *, base_dir: Path, default_suffix: Optional[str] = Non
 def resolve_dataset(ref: str) -> Path:
     return resolve_ref(ref, base_dir=RAW_DATA_DIR)
 
-def resolve_yaml(ref: str) -> Path:
-    return resolve_ref(ref, base_dir=CONFIGS_DIR, default_suffix=".yaml")
-"""
-def resolve_pretrained_model(ref: str) -> Path:
-    return resolve_ref(ref, base_dir=PRETRAINED_MODELS_DIR, default_suffix=".pt")
+def resolve_dataset_yaml(ref: str) -> Path:
+    dataset_yaml = CONFIG_DIR / "datasets"
+    return resolve_ref(ref, base_dir = dataset_yaml, default_suffix = ".yaml")
 
-def resolve_trained_model(ref: str) -> Path:
-    return resolve_ref(ref, base_dir=TRAINED_MODELS_DIR, default_suffix=".pt")
-"""
+#def resolve_pretrained_model(ref: str) -> Path:
+#    return resolve_ref(ref, base_dir=PRETRAINED_MODELS_DIR, default_suffix=".pt")
+
+#def resolve_trained_model(ref: str) -> Path:
+#    return resolve_ref(ref, base_dir=TRAINED_MODELS_DIR, default_suffix=".pt")

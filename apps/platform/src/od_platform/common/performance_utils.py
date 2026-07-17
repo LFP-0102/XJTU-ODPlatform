@@ -31,7 +31,7 @@ def time_it(
             secs = seconds % 60
             return f"{hours}小时 {mins:.0f}分钟 {secs:.2f}秒"
 
-    def _resolve_name(func:{__name__},args,kwargs)-> str:
+    def _resolve_name(func,args,kwargs)-> str:
         if callable(name):
             try:
                 return name(*args, **kwargs)
@@ -39,7 +39,7 @@ def time_it(
                 log.warning(f"time_it:name() 计算失败，会退到{func.__name__}",exc_info=True)
                 return func.__name__
 
-        if name is None:
+        if name is not None:
             return name
 
         return func.__name__

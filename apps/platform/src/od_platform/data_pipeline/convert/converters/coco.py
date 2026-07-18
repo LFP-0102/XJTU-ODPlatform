@@ -3,43 +3,71 @@ from __future__ import annotations
 import json
 from collections import defaultdict
 from pathlib import Path
-from typing import List
+from typing import Dict, List
 
-from od_platform.common.constants import AnnotationFormat, Task  # ← 改:多导入 Task
-from od_platform.data_pipeline.convert.registry import ConvertOptions, register_converter  # ← 改:多导入 ConvertOptions
-from od_platform.data_pipeline.convert.converters._geometry import normalize_box, normalize_polygon  # ← 改:多导入 normalize_polygon(分割用)
+from od_platform.common.constants import AnnotationFormat, Task
+from od_platform.data_pipeline.convert.registry import ConvertOptions, register_converter
+from od_platform.data_pipeline.convert.converters._geometry import normalize_box, normalize_polygon
 
 
-@register_converter(AnnotationFormat.COCO, supported_tasks=(Task.DETECT, Task.SEGMENT))  # ← 改:声明支持 detect + segment
-def convert_coco(input_dir: Path, out: Path, options: ConvertOptions) -> List[str]:  # ← 改:classes → options
+@register_converter(AnnotationFormat.COCO, supported_tasks=(Task.DETECT, Task.SEGMENT))
+def convert_coco(input_dir: Path, out: Path, options: ConvertOptions) -> List[str]:
+    json_files = sorted(input_dir.glob("*.json"))
+    if not json_files:
+        raise FileNotFoundError(f"COCO: 目录下没有 json 文件: {input_dir}")
+
+    # 1) 先扫一遍所有 json:合并类别词汇表 + 统计【实际被标注用到】的类别 id
+    cat: Dict[int, str] = {}
+    used_ids: set = set()
+    for jf in json_files:
+        data = json.loads(jf.read_text(encoding="utf-8"))
+        for c in data.get("categories", []):
+            cat.setdefault(c["id"], c["name"])
+        for a in data.get("annotations", []):
+            used_ids.add(a["category_id"])
+
+    # 三态语义(与 VOC 一致,用 is None 区分"探测"和"空白名单"):
+    #   None  -> 探测:只取【真的被标注用到】的类别,按 id 升序
+    #   [...] -> 白名单:名单顺序即 class_id,名单外的类跳过
+    #   []    -> 明确一个都不要
+    # 探测为什么只认 used_ids:躲开 Roboflow 等导出在 categories 里塞的零标注占位类
+    # (如 id=0 "objects"/supercategory)——声明了却没人用的类,不该占一个 class_id。
+    if options.classes is None:
+        names: List[str] = [cat[cid] for cid in sorted(cat) if cid in used_ids]
+    else:
+        names = list(options.classes)
+    seg = options.task == Task.SEGMENT
+
     out.mkdir(parents=True, exist_ok=True)
-    data = json.loads(sorted(input_dir.glob("*.json"))[0].read_text(encoding="utf-8"))
-    cat = {c["id"]: c["name"] for c in data["categories"]}
-    imgs = {im["id"]: im for im in data["images"]}
-    per = defaultdict(list)
-    for a in data["annotations"]:
-        per[a["image_id"]].append(a)
 
-    names: List[str] = list(options.classes) if options.classes else [cat[cid] for cid in sorted(cat)]
-    seg = options.task == Task.SEGMENT  # ← 新增:按 task 分流
+    # 2) 再逐个 json 处理,输出按 image 的 file_name 落盘(合并到同一个 out)
+    #    用 .get() 兜底:test.json 常常只有 images、没有 annotations,不该让它把整条流水线炸掉。
+    for jf in json_files:
+        data = json.loads(jf.read_text(encoding="utf-8"))
+        imgs = {im["id"]: im for im in data.get("images", [])}
+        per = defaultdict(list)
+        for a in data.get("annotations", []):
+            per[a["image_id"]].append(a)
 
-    for i, im in imgs.items():
-        W, H = float(im["width"]), float(im["height"])
-        stem = Path(im["file_name"]).stem
-        lines: List[str] = []
-        for a in per.get(i, []):
-            nm = cat[a["category_id"]]
-            if nm not in names:              # 白名单外的类:跳过
-                continue
-            cid = names.index(nm)
-            if seg:  # ← 新增:分割分支(吐多边形,用上 normalize_polygon)
-                for poly in a.get("segmentation", []):            # 逐条多边形
-                    p = normalize_polygon(list(poly), W, H)
-                    lines.append(f"{cid} " + " ".join(f"{v:.6f}" for v in p))
-            else:
-                x, y, w, h = a["bbox"]
-                cx, cy, bw, bh = normalize_box(x, y, x + w, y + h, W, H)
-                lines.append(f"{cid} {cx:.6f} {cy:.6f} {bw:.6f} {bh:.6f}")
-        (out / (stem + ".txt")).write_text(
-            "\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
+        for i, im in imgs.items():
+            W, H = float(im["width"]), float(im["height"])
+            stem = Path(im["file_name"]).stem
+            lines: List[str] = []
+            for a in per.get(i, []):
+                nm = cat.get(a["category_id"])
+                if nm is None or nm not in names:   # 未声明 / 白名单外 / 被过滤的占位类:跳过
+                    continue
+                cid = names.index(nm)
+                if seg:
+                    for poly in a.get("segmentation", []):
+                        p = normalize_polygon(list(poly), W, H)
+                        lines.append(f"{cid} " + " ".join(f"{v:.6f}" for v in p))
+                else:
+                    x, y, w, h = a["bbox"]
+                    cx, cy, bw, bh = normalize_box(x, y, x + w, y + h, W, H)
+                    lines.append(f"{cid} {cx:.6f} {cy:.6f} {bw:.6f} {bh:.6f}")
+            # 无标注的图也落一个空 txt(YOLO 视作纯背景),行为可预期
+            (out / (stem + ".txt")).write_text(
+                "\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
+
     return names

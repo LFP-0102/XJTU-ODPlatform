@@ -50,6 +50,8 @@ META_LOGGING_DIR = META_DIR / "logging"
 
 DATASET_CONFIG_DIR: Path = CONFIG_DIR / "datasets"
 
+RUNTIME_CONFIG_DIR: Path = CONFIG_DIR / "runtime"
+
 def raw_dataset_root(name: str) -> Path:
     return RAW_DATA_DIR / name
 
@@ -63,6 +65,9 @@ VALIDATION_RUNS_DIR: Path = RUNS_DIR / "data_validation"
 
 def validation_run_dir(run_id: str) -> Path:
     return VALIDATION_RUNS_DIR / run_id
+
+def runtime_config_path(name: str) -> Path:
+    return RUNTIME_CONFIG_DIR / f"{name}.yaml"
 
 # 对外暴露要初始化的目录列表
 def get_dirs_to_initialize() -> List[Path]:
@@ -80,7 +85,8 @@ def get_dirs_to_initialize() -> List[Path]:
         DOCS_DIR,
         SCRIPTS_DIR,
         META_LOGGING_DIR,
-        DATASET_CONFIG_DIR
+        DATASET_CONFIG_DIR,
+        RUNTIME_CONFIG_DIR
     ]
 def get_dirs_to_reset() -> List[Path]:
     return [

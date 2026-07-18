@@ -36,3 +36,22 @@ PAIR_MISSING_ERROR_RATIO: float = 0.5    # 缺标签比例 >= 50% → ERROR(流�
 PAIR_MISSING_WARN_RATIO:  float = 0.05   # 5% ~ 50% → WARNING
 PAIR_MAX_DETAIL:          int   = 20     # details 里最多列前 N 个缺失文件,避免报告爆炸
 LINEAGE_MAX_DETAIL: int = 20
+
+# ── label_integrity ──
+LABEL_MAX_DETAIL: int = 20               # 单文件内最多列出前 N 条格式错误/重复行
+
+# ── class_balance ──
+CLASS_IMBALANCE_RATIO: float = 10.0      # 最多类 / 最少类 >= 10:1 → WARNING
+CLASS_MAX_DETAIL: int = 20               # small_classes 最多列前 N 个
+
+# ── bbox_quality ──
+BBOX_MIN_AREA: float = 0.0001            # 框面积 < 此值 → 可能是误标点
+BBOX_MAX_AREA: float = 0.9               # 框面积 > 此值 → 几乎覆盖全图
+BBOX_MAX_ASPECT_RATIO: float = 20.0      # 宽高比 > 此值 → 极端细条
+BBOX_MAX_DETAIL: int = 20                # details 里最多列前 N 个异常框
+
+# ── cross_split_leakage ──
+LEAK_MAX_DETAIL: int = 20                # details 里最多列前 N 个泄露 stem
+
+# ── image_integrity ──
+IMAGE_MAX_DETAIL: int = 20               # details 里最多列前 N 个异常图像

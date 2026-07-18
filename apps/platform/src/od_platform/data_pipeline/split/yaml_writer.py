@@ -7,7 +7,7 @@ from od_platform.data_pipeline.split.manifest import SplitManifest
 logger = logging.getLogger(__name__)
 _SCHEMA_VERSION = "v1"
 
-def write_dateset_yaml(
+def write_dataset_yaml(
         yaml_path: Path, * , dataset_root: Path, classes: List[str],
         manifest: SplitManifest, dataset_name: str,
         source_format: str, task: str, manifest_ref: str) -> None:

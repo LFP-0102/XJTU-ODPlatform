@@ -1,5 +1,4 @@
 import argparse
-import logging
 
 from od_platform.runtime_config.generator import ConfigGenerator
 from od_platform.common.paths import runtime_config_path

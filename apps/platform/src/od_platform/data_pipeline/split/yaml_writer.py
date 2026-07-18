@@ -26,7 +26,7 @@ def write_dataset_yaml(
             "dataset_name": dataset_name,
             "source_format": source_format,
             "task": task,
-            "total_version":manifest.tool_version,
+            "total_version": manifest.tool_version,
             "created_at": manifest.created_at,
             "contract_fingerprint": manifest.contract_fingerprint,
             "manifest_path": manifest_ref,

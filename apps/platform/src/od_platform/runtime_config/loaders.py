@@ -4,7 +4,6 @@ from __future__ import annotations
 import logging
 from argparse import Namespace
 from pathlib import Path
-from pydoc import resolve
 from typing import Any, Dict, List, Mapping, Optional, Union
 
 import yaml
@@ -32,8 +31,7 @@ class YAMLLoader:
         # 2. 文件不存在 → fail-fast + 修复指引(★ 撞墙③)
         if not filepath.exists():
             raise FileNotFoundError(
-                f"YAML 配置文件不存在: {filepath}"
-                f"请先生成默认配置模板:"
+                f"YAML 配置文件不存在: {filepath}请先生成默认配置模板"
             )
 
         # 3. 读文件(默认 UTF-8, 失败 fallback)
@@ -52,10 +50,7 @@ class YAMLLoader:
         try:
             data = yaml.safe_load(content)
         except yaml.YAMLError as e:
-            raise ValueError(
-                f"YAML 格式错误: {filepath}",
-                f"原始错误: {e}"
-            )
+            raise ValueError(f"YAML 格式错误:{filepath}，原始错误为:{e}")
 
         # 6. 顶层结构检查
         if data is None:

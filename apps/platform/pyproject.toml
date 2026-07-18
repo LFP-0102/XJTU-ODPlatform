@@ -10,7 +10,7 @@ build-backend = "hatchling.build"
 name = "od-platform"
 dynamic = ["version"]
 description = "XJTU-ODPlatform - platform端点配置, 目标检测平台核心引擎"
-keywords = ['object-dection','Yolo', '深度学习']
+keywords = ['object-detection','Yolo', '深度学习']
 authors = [
     { name = "LFP",email = "33132606083@qq.com"  },
 ]

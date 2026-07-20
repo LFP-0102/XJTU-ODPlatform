@@ -31,10 +31,9 @@ classifiers = [
 ]
 dependencies = [
     "colorlog>=6.10.1",      # 日志彩色(③日志工具篇用过)
-    "torch>=2.13.0",         # 深度学习框架
+    "torch>=2.0.0",         # 深度学习框架
     "ultralytics>=8.4.92",
     "pydantic>=2.5,<3",
-    "pyyaml>=6.0",# YOLO
 ]
 
 
@@ -43,23 +42,10 @@ odp-init = "od_platform.cli.init_project:initialize_project"
 odp-reset = "od_platform.cli.reset_project:main"
 odp-transform = "od_platform.cli.transform_data:main"
 odp-validate = "od_platform.cli.validate_data:main"
-odp-gen-config  = "od_platform.runtime_config.gen_config:main"
+odp-gen-config = "od_platform.cli.gen_config:main"
+odp-train = "od_platform.cli.train_model:main"
+
 
 [tool.hatch.version]
 path = "src/od_platform/_version.py"
-
-[tool.pytest.ini_options]
-testpaths     = ["tests"]
-python_files  = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = [
-    "-v",
-    "--strict-markers",
-    "--tb=short",
-]
-filterwarnings = [
-    # 我们自己用 warnings.warn 的提示, 测试里要能捕获
-    "default::UserWarning",
-]
 

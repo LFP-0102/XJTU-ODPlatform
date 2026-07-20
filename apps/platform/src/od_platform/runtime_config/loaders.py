@@ -31,7 +31,8 @@ class YAMLLoader:
         # 2. 文件不存在 → fail-fast + 修复指引(★ 撞墙③)
         if not filepath.exists():
             raise FileNotFoundError(
-                f"YAML 配置文件不存在: {filepath}请先生成默认配置模板"
+                f"YAML 配置文件不存在: {filepath}\n"
+                f"请先运行 odp-gen-config 生成默认配置模板"
             )
 
         # 3. 读文件(默认 UTF-8, 失败 fallback)

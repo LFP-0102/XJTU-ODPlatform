@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+# @FileName  :service.py
+# @Time      :2026/7/17 13:47:13
+# @Author    :雨霓同学
+# @Project   :XJTU-ODPlatfrom
+# @Function  :
 from __future__ import annotations
 import logging
 from typing import List, Optional
@@ -38,9 +45,9 @@ def validate_dataset(yaml_path: Path, task_type: Optional[str] = None,
             run_id: Optional[str] = None, write_report: bool = True
                     ) -> ValidationReport:
     resolved_run_id = run_id or datetime.now().strftime("%Y%m%d-%H%M%S")
-    snapshot = build_snapshot(yaml_path=Path(yaml_path), task_type=task_type)
-    results = run_all_checks(CheckContext(yaml_path=yaml_path, snapshot=snapshot))
-    report = ValidationReport(run_id=resolved_run_id, snapshot=snapshot, results=results)
+    snap = build_snapshot(yaml_path=Path(yaml_path), task_type=task_type)
+    results = run_all_checks(CheckContext(yaml_path=yaml_path, snapshot=snap))
+    report = ValidationReport(run_id=resolved_run_id, snapshot=snap, results=results)
 
     render_to_logger(report)
 
@@ -51,4 +58,3 @@ def validate_dataset(yaml_path: Path, task_type: Optional[str] = None,
         write_results_csv(report, run_dir / "result.csv")
         logger.info(f"报告已经写入 %s (report.json + result.csv)", run_dir)
     return report
-

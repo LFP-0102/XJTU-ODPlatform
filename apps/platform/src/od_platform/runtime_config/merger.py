@@ -11,7 +11,7 @@
    2. 链表式溯源:         ConfigMetadata.overridden_from 指向被覆盖的上一个
    3. 错误信息增强:       Pydantic ValidationError 加 "[来源: ...]" 后缀
    4. 三个产物:           get_source_report (人) / to_audit_log (机器) /
-                          ValidationError 增强 (错误)
+                        ValidationError 增强 (错误)
 
 ★ 跟 阶段 4 的 Loader 衔接:
    Loader 产出独立的 dict, Merger 把它们组装进 sources list +
@@ -84,7 +84,7 @@ class ConfigMetadata:
         '←' 从左到右读: 当前 ← 上一个 ← 更早, 符合"从结果倒推原因"的阅读习惯.
         """
         parts = [f"{m.value}({m.source_label})" for m in self.chain()]
-        return " ← ".join(parts)
+        return " <- ".join(parts)
 
 
 # ============================================================

@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+# @FileName  :reset_project.py
+# @Time      :2026/7/14 13:18:56
+# @Author    :雨霓同学
+# @Project   :XJTU-ODPlatfrom
+# @Function  :
 from __future__ import  annotations
 import os
 import argparse

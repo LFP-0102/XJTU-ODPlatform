@@ -1,5 +1,13 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+# @FileName  :paths.py
+# @Time      :2026/7/13 14:22:23
+# @Author    :雨霓同学
+# @Project   :XJTU-ODPlatfrom
+# @Function  :
 from pathlib import Path
 from typing import Tuple, List
+
 
 
 WORKSPACE_MARKER: str = '.odp-workspace'
@@ -50,8 +58,6 @@ META_LOGGING_DIR = META_DIR / "logging"
 
 DATASET_CONFIG_DIR: Path = CONFIG_DIR / "datasets"
 
-RUNTIME_CONFIG_DIR: Path = CONFIG_DIR / "runtime"
-
 def raw_dataset_root(name: str) -> Path:
     return RAW_DATA_DIR / name
 
@@ -66,8 +72,16 @@ VALIDATION_RUNS_DIR: Path = RUNS_DIR / "data_validation"
 def validation_run_dir(run_id: str) -> Path:
     return VALIDATION_RUNS_DIR / run_id
 
+# 模型评估产物根目录(runs/model_evaluation/<run_id>/), 与 data_validation 同构
+EVALUATION_RUNS_DIR: Path = RUNS_DIR / "model_evaluation"
+
+def evaluation_run_dir(run_id: str) -> Path:
+    return EVALUATION_RUNS_DIR / run_id
+
+RUNTIME_CONFIGS_DIR = CONFIG_DIR / "runtime"
+
 def runtime_config_path(name: str) -> Path:
-    return RUNTIME_CONFIG_DIR / f"{name}.yaml"
+    return RUNTIME_CONFIGS_DIR / f"{name}.yaml"
 
 # 对外暴露要初始化的目录列表
 def get_dirs_to_initialize() -> List[Path]:
@@ -86,7 +100,7 @@ def get_dirs_to_initialize() -> List[Path]:
         SCRIPTS_DIR,
         META_LOGGING_DIR,
         DATASET_CONFIG_DIR,
-        RUNTIME_CONFIG_DIR
+        RUNTIME_CONFIGS_DIR
     ]
 def get_dirs_to_reset() -> List[Path]:
     return [

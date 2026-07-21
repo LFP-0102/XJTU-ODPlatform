@@ -1,16 +1,17 @@
+"""Pascal VOC -> YOLO 转换器(detect only)。VOC 标准形态只有框、没有多边形,天生只支持 detect。"""
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import List
 
-from od_platform.common.constants import AnnotationFormat,Task
-from od_platform.data_pipeline.convert.registry import register_converter,ConvertOptions
+from od_platform.common.constants import AnnotationFormat, Task
+from od_platform.data_pipeline.convert.registry import ConvertOptions, register_converter
 from od_platform.data_pipeline.convert.converters._geometry import normalize_box
 
 
 @register_converter(AnnotationFormat.PASCAL_VOC, supported_tasks=(Task.DETECT,))
-def convert_voc(input_dir: Path, out: Path, options: ConvertOptions)-> List[str]:
+def convert_voc(input_dir: Path, out: Path, options: ConvertOptions) -> List[str]:
     out.mkdir(parents=True, exist_ok=True)
     names: List[str] = list(options.classes) if options.classes else []
     discovering = options.classes is None

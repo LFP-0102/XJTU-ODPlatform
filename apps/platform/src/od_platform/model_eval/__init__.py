@@ -1,0 +1,37 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# @File       : __init__.py
+# @Path       : XJTU-ODPlatfrom/apps/platform/src/od_platform/model_eval/__init__.py
+# @Project    : XJTU-ODPlatfrom
+# @Author     : ODPlatform Team
+# @Function   : model_eval 子系统对外公共 API
+"""model_eval — 模型评估子系统(单模型评估 + 多模型对比).
+
+公共 API:
+  指标:    EvalMetrics
+  报告:    EvalReport, ComparisonReport
+  服务:    evaluate_model, compare_models
+  结果:    EvalResult, ComparisonResult
+
+典型用法 (CLI / 脚本):
+
+    from od_platform.model_eval import evaluate_model
+    result = evaluate_model(config=cfg, data_yaml=yaml, run=run, model_ref="best.pt")
+"""
+from __future__ import annotations
+
+from od_platform.model_eval.metrics import EvalMetrics
+from od_platform.model_eval.report import EvalReport, ComparisonReport
+from od_platform.model_eval.service import (
+    EvalResult, ComparisonResult, evaluate_model, compare_models,
+)
+
+__all__ = [
+    "EvalMetrics",
+    "EvalReport",
+    "ComparisonReport",
+    "EvalResult",
+    "ComparisonResult",
+    "evaluate_model",
+    "compare_models",
+]

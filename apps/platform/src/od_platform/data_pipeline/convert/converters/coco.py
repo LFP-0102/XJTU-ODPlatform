@@ -1,3 +1,10 @@
+# apps/platform/src/od_platform/data_pipeline/convert/converters/coco.py  (改进版)
+"""COCO -> YOLO 转换器(detect + segment,纯 Python,不依赖 ultralytics)。
+
+支持 input_dir 下存在多个 COCO json(例如源站已切好的 train/val/test 各一份):
+逐个读入并合并,输出按 image 的 file_name 落 txt。类别取所有 json 的并集,
+按 category id 升序给 class_id。划分(train/val/test)交给 split 子系统,convert 不管。
+"""
 from __future__ import annotations
 
 import json

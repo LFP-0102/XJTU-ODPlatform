@@ -1,3 +1,11 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+# @FileName  :logging_utils.py
+# @Time      :2026/7/13 15:23:45
+# @Author    :雨霓同学
+# @Project   :XJTU-ODPlatfrom
+# @Function  :
+
 import logging
 from pathlib import Path
 import sys
@@ -6,6 +14,7 @@ from typing import Optional
 
 from colorlog import ColoredFormatter
 from od_platform.common.naming import run_stem
+
 
 import platform
 
@@ -42,18 +51,19 @@ def get_logger(
             dataset=dataset_name,
             model=model_name
         )
-        log_file = log_dir / f"{stem}.log"
+        filename = f"{stem}.log"
+        log_file = log_dir / filename
     else:
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")[:21]
         prefix = "temp" if temp_log else log_type.replace("_", '-')
-
         filename_parts = [prefix, timestamp]
         if model_name:
             safe_model = "".join(
                 c if c.isalnum() or c in "_-" else "_" for c in model_name
             )
             filename_parts.append(safe_model)
-        log_file = log_dir / f"{'_'.join(filename_parts)}.log"
+        file_name = f"{'_'.join(filename_parts)}.log"
+        log_file = log_dir / f"{file_name}.log"
 
     # ============================================================
     # 4. 文件 Handler(完整格式, 含 logger 名)
@@ -102,7 +112,7 @@ def get_logger(
     logger.info(f"日志系统初始化完成")
     logger.info(f"运行环境: {platform.system()} {platform.release()}")
     logger.info(f"阶段类型: {log_type}")
-    logger.info(f"日志文件: {log_file}")
+    logger.info(f"日志存储位置: {log_dir}")
     logger.info(f"日志级别: {logging.getLevelName(log_level)}")
     logger.info(f"模型名称: {model_name or '无'}")
     logger.info('=' * 60)

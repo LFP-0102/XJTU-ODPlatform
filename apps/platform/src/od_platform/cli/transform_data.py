@@ -1,3 +1,15 @@
+# apps/platform/src/od_platform/cli/transform_data.py
+#!/usr/bin/env python
+"""odp-transform CLI —— 原始数据集 → 可训练 YOLO 数据集(极薄壳:解析→构造→跑→退出码)。
+
+退出码约定:0=成功,1=数据/用法错误(被捕获并友好提示),2=argparse 参数错误(argparse 自己用)。
+
+接线:
+  · 按 D1 纪律,在入口调一次 get_logger,把控制台 + 端级日志装到根 logger(get_logger 一行未改)。
+    日志统一落 apps/platform/logging/,和其它子系统一致——runs/ 下不写日志。
+  · with RunContext("data_pipeline") 开一次"现场"(唯一时间戳 + 目录),注入给 pipeline。
+    开头打一行 run_id,让 logging/ 里的日志能和 runs/<run_id>/ 现场对上(靠 run_id 关联,不靠同穴)。
+"""
 from __future__ import annotations
 
 import argparse

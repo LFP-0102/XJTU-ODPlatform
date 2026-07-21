@@ -1,3 +1,22 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+# @FileName  :lineage.py
+# @Time      :2026/7/17 14:17:20
+# @Author    :雨霓同学
+# @Project   :XJTU-ODPlatfrom
+# @Function  :划分血缘契约
+# apps/platform/src/od_platform/common/lineage.py
+"""划分血缘契约:把一次数据划分冻结成可复现、可审计、可逐样本核对的产物。
+
+它是"生产一次划分"和"核验一次划分"两方共用的契约,所以住在公共层 common/——
+生产方写 manifest 用它、验证方读 manifest 核对也用它,两边都只向下依赖这里,谁也不 import 谁。
+
+一份 manifest 回答四个问题:
+  1. 每张图去了哪一组?              → 每条 SampleLineage.split
+  2. 每张图的内容有没有被动过?      → 每条 SampleLineage.sha256   ← 逐样本指纹
+  3. 整份数据集是不是同一版?        → contract_fingerprint         ← 划分契约指纹
+  4. 用哪个版本的流水线切的?        → tool_version
+"""
 from __future__ import annotations
 
 import hashlib

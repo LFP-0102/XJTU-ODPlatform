@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-# @FileName  : base_config.py
+# @FileName  : base.py
 # @Author    : 雨霓同学 (ODPlatform team)
 # @Project   : ODPlatform
 # @Function  : runtime_config 子系统基础模型——BaseConfig

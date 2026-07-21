@@ -19,6 +19,8 @@ if __name__ == "__main__":
     results = model.train(data=r"C:\Users\Matri\Desktop\XJTU-ODPlatfrom\apps\platform\configs\datasets\MRI_PASCAL.yaml",
                     epochs=2, imgsz=640)
 
+    print(results)
+
 
 
 

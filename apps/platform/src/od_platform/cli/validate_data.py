@@ -1,3 +1,11 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+# @FileName  :validate_data.py
+# @Time      :2026/7/17 15:56:10
+# @Author    :雨霓同学
+# @Project   :XJTU-ODPlatfrom
+# @Function  :
+# apps/platform/src/od_platform/cli/validate_data.py
 """odp-validate:训练前质量闸门的命令行入口。退出码是给机器的第一公民。"""
 from __future__ import annotations
 

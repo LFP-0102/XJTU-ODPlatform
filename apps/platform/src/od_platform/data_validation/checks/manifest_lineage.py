@@ -1,3 +1,11 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+# @FileName  :manifest_lineage.py
+# @Time      :2026/7/17 15:27:22
+# @Author    :雨霓同学
+# @Project   :XJTU-ODPlatfrom
+# @Function  :
+# apps/platform/src/od_platform/data_validation/checks/manifest_lineage.py
 """check: manifest_lineage —— 逐样本核对"冻结之后有没有人动过数据"。
 
 对 manifest 的每个 SampleLineage{stem, split, sha256},去盘上找到标签、重算哈希、核对位置,
@@ -27,7 +35,7 @@ def validate_manifest_lineage(ctx: CheckContext) -> CheckResult:
     manifest, err, _ = load_manifest_from_yaml(ctx.snapshot.yaml_data)
     if err:
         return CheckResult(_NAME, CheckSeverity.ERROR,
-                           "拿不到 manifest,无法逐样本核对内容/位置", {"reason": err})
+                        "拿不到 manifest,无法逐样本核对内容/位置", {"reason": err})
 
     # 盘上真实存在的标签(复用 snapshot 一次扫描的结果):(split, stem) -> path;并记 stem 实际所在 split
     disk: Dict[Tuple[str, str], object] = {}
@@ -57,14 +65,15 @@ def validate_manifest_lineage(ctx: CheckContext) -> CheckResult:
     n_bad = len(changed) + len(moved) + len(missing)
     if n_bad == 0:
         return CheckResult(_NAME, CheckSeverity.PASS,
-                           f"逐样本核对通过：{len(manifest.samples)} 个样本内容与位置均与冻结时一致",
-                           {"n_samples": len(manifest.samples)})
+                        f"逐样本核对通过：{len(manifest.samples)} 个样本内容与位置均与冻结时一致",
+                        {"n_samples": len(manifest.samples)})
     return CheckResult(
         _NAME, CheckSeverity.ERROR,
         (f"逐样本核对失败：改内容 {len(changed)} / 挪组 {len(moved)} / 丢失 {len(missing)}"
-         f"（共 {len(manifest.samples)} 个样本）"),
+        f"（共 {len(manifest.samples)} 个样本）"),
         {"n_samples": len(manifest.samples),
-         "n_changed": len(changed), "n_moved": len(moved), "n_missing": len(missing),
-         "changed": changed[:LINEAGE_MAX_DETAIL], "moved": moved[:LINEAGE_MAX_DETAIL],
-         "missing": missing[:LINEAGE_MAX_DETAIL]},
+        "n_changed": len(changed), "n_moved": len(moved), "n_missing": len(missing),
+        "changed": changed[:LINEAGE_MAX_DETAIL], "moved": moved[:LINEAGE_MAX_DETAIL],
+        "missing": missing[:LINEAGE_MAX_DETAIL]},
     )
+

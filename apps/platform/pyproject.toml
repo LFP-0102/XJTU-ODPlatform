@@ -32,8 +32,7 @@ classifiers = [
 dependencies = [
     "colorlog>=6.10.1",      # 日志彩色(③日志工具篇用过)
     "torch>=2.0.0",         # 深度学习框架
-    "ultralytics>=8.4.92",
-    "pydantic>=2.5,<3",
+    "ultralytics>=8.4.92",   # YOLO
 ]
 
 
@@ -44,7 +43,8 @@ odp-transform = "od_platform.cli.transform_data:main"
 odp-validate = "od_platform.cli.validate_data:main"
 odp-gen-config = "od_platform.cli.gen_config:main"
 odp-train = "od_platform.cli.train_model:main"
-
+odp-infer= "od_platform.cli.infer_model:main"
+odp-eval = "od_platform.cli.evaluate_model:main"
 
 [tool.hatch.version]
 path = "src/od_platform/_version.py"

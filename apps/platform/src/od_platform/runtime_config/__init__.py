@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+# @FileName  : __init__.py
+# @Author    : 雨霓同学 (ODPlatform team)
+# @Project   : ODPlatform
+# @Function  : runtime_config 子系统对外公共 API
 """runtime_config — YOLO 训练 / 验证配置子系统.
 
 公共 API:
@@ -92,7 +98,7 @@ def build_train_config(
         yaml_path:     YAML 文件名 / 路径. None 跳过 yaml 加载.
                       默认 "train.yaml" (从 yaml_dir 找).
         cli_args:      argparse.Namespace 或 dict. None 跳过 CLI 加载.
-        yaml_dir:      YAML 目录, 默认 paths.RUNTIME_CONFIG_DIR.
+        yaml_dir:      YAML 目录, 默认 paths.RUNTIME_CONFIGS_DIR.
         cli_exclude:   CLI 额外排除字段 (并入 CLILoader.DEFAULT_EXCLUDE).
         cli_mapping:   CLI 参数名映射 (CLI 名 → Pydantic 字段名).
         extra_sources: 额外配置源 [(source_id, dict), ...],
@@ -111,12 +117,12 @@ def build_train_config(
         ValidationError:   Pydantic 字段验证失败 (已注入溯源链), dry_run=True 时不 raise
     """
     # 延迟 import 避免循环依赖 + 让 paths.py 改动不击穿这里
-    from od_platform.common.paths import RUNTIME_CONFIG_DIR
+    from od_platform.common.paths import RUNTIME_CONFIGS_DIR
 
     # 1. 加载各源
     sources = load_all_sources(
         yaml_path   = yaml_path,
-        yaml_dir    = yaml_dir or RUNTIME_CONFIG_DIR,
+        yaml_dir    = yaml_dir or RUNTIME_CONFIGS_DIR,
         cli_args    = cli_args,
         cli_exclude = cli_exclude,
         cli_mapping = cli_mapping,
@@ -155,11 +161,11 @@ def build_val_config(
 
     参数语义和返回值结构与 build_train_config 完全一致, 仅类型不同.
     """
-    from od_platform.common.paths import RUNTIME_CONFIG_DIR
+    from od_platform.common.paths import RUNTIME_CONFIGS_DIR
 
     sources = load_all_sources(
         yaml_path   = yaml_path,
-        yaml_dir    = yaml_dir or RUNTIME_CONFIG_DIR,
+        yaml_dir    = yaml_dir or RUNTIME_CONFIGS_DIR,
         cli_args    = cli_args,
         cli_exclude = cli_exclude,
         cli_mapping = cli_mapping,
@@ -204,11 +210,11 @@ def build_infer_config(
         )
         model.predict(**config.to_ultralytics_kwargs())
     """
-    from od_platform.common.paths import RUNTIME_CONFIG_DIR
+    from od_platform.common.paths import RUNTIME_CONFIGS_DIR
 
     sources = load_all_sources(
         yaml_path   = yaml_path,
-        yaml_dir    = yaml_dir or RUNTIME_CONFIG_DIR,
+        yaml_dir    = yaml_dir or RUNTIME_CONFIGS_DIR,
         cli_args    = cli_args,
         cli_exclude = cli_exclude,
         cli_mapping = cli_mapping,

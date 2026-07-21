@@ -1,13 +1,22 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+# @FileName  :yaml_writer.py
+# @Time      :2026/7/16 13:00:52
+# @Author    :雨霓同学
+# @Project   :XJTU-ODPlatfrom
+# @Function  :写训练需要的yaml文件
 from __future__ import annotations
 import logging, yaml
 from pathlib import Path
 from typing import List
+
 from od_platform.data_pipeline.split.manifest import SplitManifest
 
 logger = logging.getLogger(__name__)
+
 _SCHEMA_VERSION = "v1"
 
-def write_dataset_yaml(
+def write_dateset_yaml(
         yaml_path: Path, * , dataset_root: Path, classes: List[str],
         manifest: SplitManifest, dataset_name: str,
         source_format: str, task: str, manifest_ref: str) -> None:
@@ -26,7 +35,7 @@ def write_dataset_yaml(
             "dataset_name": dataset_name,
             "source_format": source_format,
             "task": task,
-            "total_version": manifest.tool_version,
+            "total_version":manifest.tool_version,
             "created_at": manifest.created_at,
             "contract_fingerprint": manifest.contract_fingerprint,
             "manifest_path": manifest_ref,
@@ -40,3 +49,9 @@ def write_dataset_yaml(
     }
     yaml_path.write_text(yaml.dump(doc,allow_unicode=True, sort_keys=False), encoding="utf-8")
     logger.info("已经写入 dataset yaml: %s", yaml_path)
+
+
+
+
+
+

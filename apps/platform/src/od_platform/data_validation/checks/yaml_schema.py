@@ -1,26 +1,21 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+# @FileName  :yaml_schema.py
+# @Time      :2026/7/17 10:11:46
+# @Author    :雨霓同学
+# @Project   :XJTU-ODPlatfrom
+# @Function  :
 from __future__ import  annotations
-from pathlib import Path
-from typing import Any,Dict, List, Optional, Tuple
-import yaml
+from typing import  List
+
 from od_platform.data_validation.registry import (CheckContext, CheckResult, CheckSeverity, check)
 _NAME = "yaml_schema"
 
-def _load_yaml(path: Path) -> Tuple[Optional[Dict[str, Any]],Optional[str]]:
-    if not path.exists():
-        return None, f"yaml file {path} does not exist"
-    try:
-        data = yaml.safe_load(path.read_text(encoding='utf-8')) or {}
-    except yaml.YAMLError as e:
-        return None,  f"yaml file {path} 解析失败: {e}"
-    if not isinstance(data, dict):
-        return None, f"yaml 顶层不是dict: {type(data).__name__}"
-    return data, None
 
 @check(_NAME)
 def validate_yaml_schema(ctx: CheckContext) -> CheckResult:
-    if ctx.snapshot.yaml_load_error:  # 前置错:早返回
-        return CheckResult(_NAME, CheckSeverity.ERROR, "yaml 无法加载",
-                           {"error": ctx.snapshot.yaml_load_error})
+    if ctx.snapshot.yaml_load_error:
+        return CheckResult(_NAME, CheckSeverity.ERROR, "yaml 无法加载", {"error": ctx.snapshot.yaml_load_error})
     data = ctx.snapshot.yaml_data
     problems: List[str] = []
     nc, names = data.get("nc"), data.get("names")

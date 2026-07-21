@@ -1,3 +1,11 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+# @FileName  :report.py
+# @Time      :2026/7/17 15:35:59
+# @Author    :雨霓同学
+# @Project   :XJTU-ODPlatfrom
+# @Function  :
+# apps/platform/src/od_platform/data_validation/report.py
 """ValidationReport:纯数据(可落 report.json / results.csv);渲染是另一回事(logger / 文件)。"""
 from __future__ import annotations
 
@@ -19,7 +27,6 @@ class ValidationReport:
     run_id:           str
     snapshot:         DatasetSnapshot
     results:          List[CheckResult]
-#   duration_seconds: float = 0.0
 
     @property
     def overall_severity(self) -> str:

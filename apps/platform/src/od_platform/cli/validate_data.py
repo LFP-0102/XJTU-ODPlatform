@@ -10,6 +10,8 @@
 from __future__ import annotations
 
 import argparse
+import datetime
+import json
 import sys
 from pathlib import Path
 from od_platform.common import refs
@@ -49,8 +51,25 @@ def _collect_purge_targets(report) -> dict:
     return to_delete
 
 
+def _resolve_processed_root(path_str: str) -> Path | None:
+    """从 processed 图片路径推断数据集根目录。
+    路径形如 .../data/processed/<dataset>/images/<split>/<file>,返回 .../data/processed/<dataset>。"""
+    p = Path(path_str)
+    parts = p.parts
+    try:
+        idx = parts.index("images")
+        return Path(*parts[:idx])
+    except ValueError:
+        return None
+
+
 def _purge_bad_images(report, yes: bool = False) -> int:
-    """交互式确认后删除问题图片(损坏 + 完全重复)+ 同名标签。删除后需重跑 transform。"""
+    """交互式确认后删除问题图片(损坏 + 完全重复)+ 同名标签 + 写 purge_list.json 黑名单。
+
+    只删 processed,不动 raw。purge_list.json 记录被删图的 stem,
+    重跑 odp-transform 时 orchestrator 会读取并跳过这些 stem——
+    这样 raw 完全不动,重跑 transform 数量也会真正减少。
+    """
     to_delete = _collect_purge_targets(report)
     if not to_delete:
         print("✅ 没有问题图片需要清理")
@@ -63,7 +82,10 @@ def _purge_bad_images(report, yes: bool = False) -> int:
             break
         print(f"  [{info['split']}] {info['image']} - {info['reason']}")
 
-    print("\n⚠️ 此操作将删除图片 + 同名标签文件,删除后需重跑 odp-transform 重建 manifest。")
+    print("\n⚠️ 此操作将:")
+    print(f"   1. 删除 processed 的图片 + 标签({len(to_delete)} 张,raw 不动)")
+    print("   2. 写 purge_list.json 黑名单(重跑 transform 时自动跳过这些图)")
+    print("   3. 删除后需重跑 odp-transform 重建数据集与指纹(数量会真正减少)")
     if not yes:
         try:
             ans = input(f'确认删除请输入大写 "{_PURGE_KEYWORD}"(其他任意输入取消): ').strip()
@@ -75,7 +97,8 @@ def _purge_bad_images(report, yes: bool = False) -> int:
             return 0
 
     deleted = 0
-    for path_str in to_delete:
+    purge_items = []
+    for path_str, info in to_delete.items():
         img_path = Path(path_str)
         # 标签路径:把路径里的 images 段替换为 labels,后缀改 .txt
         parts = list(img_path.parts)
@@ -93,9 +116,31 @@ def _purge_bad_images(report, yes: bool = False) -> int:
             label_path.unlink(missing_ok=True)
         except OSError:
             pass
+        purge_items.append({"stem": img_path.stem, "image": info["image"],
+                            "reason": info["reason"]})
 
-    print(f"\n✅ 已删除 {deleted} 张问题图片及其标签")
-    print("⚠️ manifest 已失效,请重跑 'odp-transform --dataset <name> --format <fmt> ...' 重建数据集与指纹")
+    # 写 purge_list.json 黑名单(放到 processed 数据集根目录)
+    processed_root = _resolve_processed_root(next(iter(to_delete)))
+    if processed_root:
+        purge_list_path = processed_root / "purge_list.json"
+        purge_data = {
+            "dataset": processed_root.name,
+            "purged_at": datetime.datetime.now().isoformat(timespec="seconds"),
+            "count": len(purge_items),
+            "stems": [it["stem"] for it in purge_items],
+            "items": purge_items,
+        }
+        try:
+            purge_list_path.write_text(
+                json.dumps(purge_data, ensure_ascii=False, indent=2), encoding="utf-8")
+            print(f"   - 黑名单已写入: {purge_list_path}")
+        except OSError as e:
+            print(f"   ⚠️ 黑名单写入失败: {e}")
+
+    print(f"\n✅ 已删除 {deleted} 张问题图片及其标签(raw 未改动)")
+    print("⚠️ manifest 已失效,请重跑(会自动跳过黑名单中的图):")
+    print(f"   odp-transform --dataset <name> --format <fmt> --split-strategy <strategy>")
+    print("   重跑后数据集数量会真正减少。")
     return 0
 
 
@@ -108,7 +153,7 @@ def main() -> int:
     parser.add_argument("--no-report", action="store_true",
                         help="只判定不落盘 report.json / results.csv")
     parser.add_argument("--purge", action="store_true",
-                        help="检测到问题图片(损坏/完全重复)后,交互式确认删除(需输入大写 YES)")
+                        help="检测到问题图片(损坏/完全重复)后,交互式确认删除 processed(不动 raw)+ 写黑名单,需输入大写 YES")
     parser.add_argument("--yes", action="store_true",
                         help="配合 --purge:跳过交互确认直接删除(慎用)")
     args = parser.parse_args()

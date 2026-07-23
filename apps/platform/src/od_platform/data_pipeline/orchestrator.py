@@ -155,16 +155,36 @@ class DatasetPipeline:
                 }
 
 
+    def _load_purge_list(self) -> set:
+        """读取 processed_root/purge_list.json 黑名单(由 odp-validate --purge 生成)。
+        返回待跳过的 stem 集合。文件不存在或读取失败返回空集(不阻断主流程)。"""
+        purge_path = self.processed_root / "purge_list.json"
+        if not purge_path.exists():
+            return set()
+        try:
+            import json
+            data = json.loads(purge_path.read_text(encoding="utf-8"))
+            stems = set(data.get("stems", []))
+            if stems:
+                logger.info("读取黑名单 purge_list.json: %d 张图将被跳过(raw 不动)", len(stems))
+            return stems
+        except Exception as e:
+            logger.warning("读取 purge_list.json 失败(忽略,继续全量处理): %s", e)
+            return set()
+
     def _scan(self, labels_dir:Path, classes:List[str]):
         image_index: Dict[str, Path]  = {}
         for ext in IMAGE_EXTENSIONS:
             for img in self.raw_images.glob(f"*{ext}"):
                 image_index.setdefault(img.stem, img)
+        purged_stems = self._load_purge_list()
         stems: List[str] = []
         labels_per_image: Dict[str, List[str]] = {}
         label_bytes: Dict[str, bytes] = {}
         for lbl in sorted(labels_dir.glob("*.txt")):
             if lbl.stem not in image_index:
+                continue
+            if lbl.stem in purged_stems:
                 continue
             stems.append(lbl.stem)
             label_bytes[lbl.stem] = lbl.read_bytes()

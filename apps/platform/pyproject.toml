@@ -10,9 +10,9 @@ build-backend = "hatchling.build"
 name = "od-platform"
 dynamic = ["version"]
 description = "XJTU-ODPlatform - platform端点配置, 目标检测平台核心引擎"
-keywords = ['object-detection','Yolo', '深度学习']
+keywords = ['object-dection','Yolo', '深度学习']
 authors = [
-    { name = "LFP",email = "33132606083@qq.com"  },
+    { name = "Xiao Liang",email = "sx12101184@qq.com"  },
 ]
 license = { text = "MIT" }
 readme = "README.md"
@@ -31,7 +31,7 @@ classifiers = [
 ]
 dependencies = [
     "colorlog>=6.10.1",      # 日志彩色(③日志工具篇用过)
-    "torch>=2.0.0",         # 深度学习框架
+    "torch>=2.13.0",         # 深度学习框架
     "ultralytics>=8.4.92",   # YOLO
 ]
 
@@ -44,7 +44,9 @@ odp-validate = "od_platform.cli.validate_data:main"
 odp-gen-config = "od_platform.cli.gen_config:main"
 odp-train = "od_platform.cli.train_model:main"
 odp-infer= "od_platform.cli.infer_model:main"
-odp-eval = "od_platform.cli.evaluate_model:main"
+
+
+
 
 [tool.hatch.version]
 path = "src/od_platform/_version.py"

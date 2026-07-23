@@ -71,6 +71,9 @@ apps/platform/logging/
 apps/platform/configs/
 *.yaml
 
+# 重置备份产物(odp-reset --backup 产出)
+backups/
+
 # 临时文件 / 构建产物
 tmp/
 temp/
@@ -84,5 +87,5 @@ temp/
 *.npz
 
 # 工具元数据
-.odp-meta/
+.odp-meta
 

@@ -1,0 +1,36 @@
+[33mcommit 2882c3a8f2935cc3d30e74ffcaa18b193813f55d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m
+Author: 冯一明 <2231310027>
+Date:   Tue Jul 14 13:49:14 2026 +0800
+
+    第二次提交
+
+ apps/platform/README.md                            |   0
+ apps/platform/pyproject.toml                       |  44 [32m+++++++++[m
+ apps/platform/src/od_platform/cli/init_project.py  |  68 [32m+++++++++++[m[31m--[m
+ .../src/od_platform/common/logging_utils.py        |   8 [31m--[m
+ .../src/od_platform/common/performance_utils.py    |  69 [32m+++++++++++++[m
+ .../src/od_platform/common/string_utils.py         | 108 [32m+++++++++++++++++++++[m
+ scripts/init_project.py                            |  89 [32m+++++++++++++++[m[31m--[m
+ scripts/make_disaster_data.ps1                     |  37 [32m+++++++[m
+ scripts/make_disaster_data.sh                      |  46 [32m+++++++++[m
+ 9 files changed, 447 insertions(+), 22 deletions(-)
+
+[33mcommit 28155536b0210cc93f9e2e99c36933483e74056c[m
+Author: 冯一明 <2231310027@example.com>
+Date:   Mon Jul 13 19:40:22 2026 +0800
+
+    feat: project init structure + timed init script
+
+ .gitignore                                         |  88 [32m+++++++++++++++[m
+ .odp-workspace                                     |   0
+ apps/platform/src/od_platform/__init__.py          |   3 [32m+[m
+ apps/platform/src/od_platform/_version.py          |   1 [32m+[m
+ apps/platform/src/od_platform/cli/__init__.py      |   0
+ apps/platform/src/od_platform/cli/init_project.py  |  37 [32m++++++[m
+ apps/platform/src/od_platform/common/__init__.py   |   0
+ .../src/od_platform/common/logging_utils.py        | 125 [32m+++++++++++++++++++++[m
+ apps/platform/src/od_platform/common/paths.py      |  68 [32m+++++++++++[m
+ pyproject.toml                                     |   0
+ scripts/init_project.py                            |  12 [32m++[m
+ scripts/timed_init_project.py                      |  16 [32m+++[m
+ 12 files changed, 350 insertions(+)

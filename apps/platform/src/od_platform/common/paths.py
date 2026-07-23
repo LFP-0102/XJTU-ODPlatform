@@ -71,13 +71,6 @@ VALIDATION_RUNS_DIR: Path = RUNS_DIR / "data_validation"
 
 def validation_run_dir(run_id: str) -> Path:
     return VALIDATION_RUNS_DIR / run_id
-
-# 模型评估产物根目录(runs/model_evaluation/<run_id>/), 与 data_validation 同构
-EVALUATION_RUNS_DIR: Path = RUNS_DIR / "model_evaluation"
-
-def evaluation_run_dir(run_id: str) -> Path:
-    return EVALUATION_RUNS_DIR / run_id
-
 RUNTIME_CONFIGS_DIR = CONFIG_DIR / "runtime"
 
 def runtime_config_path(name: str) -> Path:

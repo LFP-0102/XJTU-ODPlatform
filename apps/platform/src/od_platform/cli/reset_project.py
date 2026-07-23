@@ -16,6 +16,7 @@ from pathlib import Path
 import subprocess
 import platform
 import datetime
+import json
 from od_platform.common.paths import (ROOT_DIR, RAW_DATA_DIR, PRETRAINED_MODELS_DIR,META_LOGGING_DIR,
                                 get_dirs_to_reset, is_protected)
 from od_platform.common.performance_utils import time_it
@@ -237,8 +238,71 @@ def _execute_delete(deletable: list[tuple[Path, int, int]]) -> None:
     else:
         logger.info(f"完成： 成功{len(success)}，失败0个")
 
+def _rel_to_root(path: Path) -> str:
+    """安全地把路径转成相对仓库根的字符串;不在仓库内则返回绝对路径。"""
+    try:
+        return str(path.relative_to(ROOT_DIR))
+    except ValueError:
+        return str(path)
+
+
+def _backup_targets(
+        deletable: list[tuple[Path, int, int]],
+        backup_root: Path,
+) -> tuple[Path, list[tuple[Path, Path]]] | None:
+    """把待删目录原样复制到 backup_root/reset_<timestamp>/<相对路径>。
+
+    返回 (backup_dir, [(src, dst), ...]);任一目录复制失败则写部分清单后返回 None,
+    调用方据此中止重置(备份失败绝不删)。
+    """
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_dir = backup_root / f"reset_{timestamp}"
+    backup_dir.mkdir(parents=True, exist_ok=True)
+
+    manifest: dict = {
+        "backup_time": datetime.datetime.now().isoformat(timespec="seconds"),
+        "backup_dir": _rel_to_root(backup_dir),
+        "triggered_by": getpass.getuser(),
+        "total_targets": len(deletable),
+        "targets": [],
+    }
+    copied: list[tuple[Path, Path]] = []
+
+    for src, file_count, total_size in deletable:
+        rel = _rel_to_root(src)
+        dst = backup_dir / src.relative_to(ROOT_DIR) if src.is_relative_to(ROOT_DIR) \
+            else backup_dir / src.name
+        entry = {"source": rel, "backup_path": _rel_to_root(dst),
+                 "file_count": file_count, "size_bytes": total_size}
+        try:
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            if dst.exists():
+                shutil.rmtree(dst, onexc=_on_rm_error)
+            shutil.copytree(src, dst)
+            entry["status"] = "ok"
+            manifest["targets"].append(entry)
+            copied.append((src, dst))
+            logger.info(f"📦 备份 {rel} → {_rel_to_root(dst)} "
+                        f"({_format_size(total_size)}, {file_count} 文件)")
+        except Exception as e:
+            entry["status"] = "failed"
+            entry["error"] = str(e)
+            manifest["targets"].append(entry)
+            (backup_dir / "backup_manifest.json").write_text(
+                json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+            logger.error(f"❌ 备份失败 {rel}: {e}")
+            return None
+
+    manifest["total_backed_up"] = len(copied)
+    (backup_dir / "backup_manifest.json").write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    logger.info(f"📦 备份完成: {_rel_to_root(backup_dir)} (共 {len(copied)} 个目录)")
+    return backup_dir, copied
+
+
 @time_it(iterations=1, logger_instance=logger, name='项目初始化')
-def reset_project(yes: bool = False, force: bool = False, dry_run: bool = False) -> int:
+def reset_project(yes: bool = False, force: bool = False, dry_run: bool = False,
+                  backup: bool = False, backup_dir: str | None = None) -> int:
     logger.info("项目重置工具启动".center(LINE_WIDTH, "="))
     logger.info(f"项目的根路径是：{ROOT_DIR}")
 
@@ -264,6 +328,8 @@ def reset_project(yes: bool = False, force: bool = False, dry_run: bool = False)
         return 0
 
     if not yes:
+        if backup:
+            logger.info(" ⚠️ --backup 仅在 --yes 执行时生效,当前 dry-run 不备份")
         if dry_run:
             logger.info(" 这是显式的 --dry-run模式，要执行真正的删除，请加 --yes：")
         else:
@@ -274,6 +340,21 @@ def reset_project(yes: bool = False, force: bool = False, dry_run: bool = False)
         if not _confirm(len(deletable)):
             logger.info("用户取消, 未执行任何删除操作")
             return 1
+
+    if backup:
+        bk_root = Path(backup_dir) if backup_dir else (ROOT_DIR / "backups")
+        try:
+            bk_root.mkdir(parents=True, exist_ok=True)
+        except OSError as e:
+            logger.error(f"创建备份目录失败 {bk_root}: {e},已中止重置")
+            return 1
+        backup_result = _backup_targets(deletable, bk_root)
+        if backup_result is None:
+            logger.error("备份失败,已中止重置,未删除任何内容")
+            return 1
+        backup_path, _ = backup_result
+        logger.info(f"备份已保存: {_rel_to_root(backup_path)}")
+
     logger.info("")
     logger.info("开始执行删除操作".center(LINE_WIDTH, '='))
     _execute_delete(deletable)
@@ -287,8 +368,13 @@ def main() -> int:
     parser.add_argument("--yes",action="store_true", help="真正执行删除 (默认是dry-run)")
     parser.add_argument("--force",action="store_true", help="强制删除，不进行确认")
     parser.add_argument("--dry-run",action="store_true", help=" dry-run模式，不实际删除")
+    parser.add_argument("--backup", action="store_true",
+                        help="重置前把待删目录原样备份(仅在 --yes 时生效)")
+    parser.add_argument("--backup-dir", default=None,
+                        help="备份根目录(默认 <仓库根>/backups/)")
     args = parser.parse_args()
-    return reset_project(yes=args.yes, force=args.force, dry_run=args.dry_run)
+    return reset_project(yes=args.yes, force=args.force, dry_run=args.dry_run,
+                         backup=args.backup, backup_dir=args.backup_dir)
 
 if __name__ == "__main__":
     sys.exit(main())

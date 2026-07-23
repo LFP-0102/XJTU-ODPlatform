@@ -1,16 +1,3 @@
-#!/usr/bin/env python
-# @File       : report.py
-# @Path       : apps/platform/src/od_platform/runtime_config/report.py
-# @Author     : 刘赋平
-# @Date       : 2026-07-19 10:19:51
-# @Version    : v1.0.0
-# @Description: 
-#   请在此处填写该模块的功能概述。
-#   例如：封装数据库连接工具类，提供增删改查接口。
-# -----------------------------------------------------------------------------
-# @ChangeLog:
-#   2026/7/19 | 刘赋平 | v1.0.0 | 初始化创建
-
 from __future__ import annotations
 
 import logging
@@ -35,7 +22,7 @@ def _was_overridden(meta: Any) -> bool:
 
 
 def render_effective(config: Any, merger: Any, *, width: int = _WIDTH) -> List[str]:
-    lines = ['=' * width, '配置参数信息'.center(width), '=' * width]
+    lines = ['=' * width, '配置参数信息'.center(width), "-" * width]
     for name in type(config).model_fields:
         value = getattr(config, name)
         meta = merger.get_metadata(name)
@@ -56,10 +43,10 @@ def render_overrides(config: Any, merger: Any, *, width: int = _WIDTH) -> List[s
     total = len(type(config).model_fields)
     lines = ["-" * width, "配置覆盖情况".center(width), "-" * width]
     if not changed:
-        lines.append(f"没有字段被改写: {total}个字段取值一致")
+        lines.append(f"没有字段被改写:  {total}各个字段取值一致")
         return lines
 
-    lines.append(f"{len(changed)}个字段在合并中被改写: 其余{total - len(changed)}个字段取值一致，未列出")
+    lines.append(f"{len(changed)}个字段在合并中被改写:  其余{total - len(changed)}个字段取值一致, 未列出")
     lines += [f"{pad_to_width(n, _KEY_WIDTH)}: {c}" for n, c in changed]
     return lines
 

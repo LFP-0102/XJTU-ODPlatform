@@ -10,7 +10,7 @@ import logging, yaml
 from pathlib import Path
 from typing import List
 
-from od_platform.data_pipeline.split.manifest import SplitManifest
+from od_platform.common.lineage import SplitManifest
 
 logger = logging.getLogger(__name__)
 

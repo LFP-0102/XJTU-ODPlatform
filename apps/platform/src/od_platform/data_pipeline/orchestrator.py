@@ -8,6 +8,7 @@
 """raw -> 转换 ->配对 -> 划分 -> 冻结指纹 -> 落盘 -> 写yaml"""
 
 from __future__ import annotations
+import csv
 import logging
 import tempfile  # 临时输出
 from pathlib import Path
@@ -17,12 +18,11 @@ from od_platform.common.constants import (
     DEFAULT_RANDOM_STATE, DEFAULT_SPLIT_STRATEGY, DEFAULT_TRAIN_RATE, DEFAULT_VAL_RATE,
     Task, IMAGE_EXTENSIONS
 )
+from od_platform.common.lineage import SplitManifest
 from od_platform.common.refs import resolve_dataset
 from od_platform.common.run_context import RunContext
 from od_platform.data_pipeline.convert.registry import ConvertOptions
 from od_platform.data_pipeline.convert.service import convert_data_to_yolo
-from od_platform.data_pipeline.split import manifest
-from od_platform.data_pipeline.split.manifest import SplitManifest
 from od_platform.data_pipeline.split.materializer import SplitOutputDirs,SplitSourceDirs,materialize
 
 from od_platform.data_pipeline.split.service import split_dataset
@@ -37,6 +37,8 @@ class DatasetPipeline:
         train_rate: float = DEFAULT_TRAIN_RATE, val_rate: float = DEFAULT_VAL_RATE,
         classes: Optional[List[str]] = None, random_state: int = DEFAULT_RANDOM_STATE,
         split_strategy: str = DEFAULT_SPLIT_STRATEGY,
+        group_by_prefix: Optional[int] = None,
+        groups_file: Optional[Path] = None,
         run: Optional[RunContext] = None,
             ):
         self.annotation_format = annotation_format
@@ -45,13 +47,14 @@ class DatasetPipeline:
         self.val_rate = val_rate
         self.random_state = random_state
         self.split_strategy = split_strategy
+        self.group_by_prefix = group_by_prefix
+        self.groups_file = groups_file
         self._run_ctx = run
         self._options = ConvertOptions(task=task, classes=classes)
 
         self.raw_root = resolve_dataset(dataset)
         self.dataset_name = self.raw_root.name
-        self.raw_images = self.raw_root / "images"
-        self.raw_annotations = self.raw_root / "annotations"
+        self.raw_images, self.raw_annotations = self._resolve_raw_dirs()
         self.processed_root = paths.dataset_processed_dir(self.dataset_name)
         self.output_dir = SplitOutputDirs(self.processed_root)
         self.yaml_out = paths.dataset_yaml_path(self.dataset_name)
@@ -61,6 +64,44 @@ class DatasetPipeline:
             return self._execute(self._run_ctx)
         with RunContext("data_pipeline") as run:
             return self._execute(run)
+
+    def _resolve_raw_dirs(self) -> tuple[Path, Path]:
+        """智能识别 raw 目录布局。
+
+        数据师的 raw 数据来源多样,常见布局都能吃:
+          images/ + annotations/    (引擎默认)
+          JPEGImages/ + Annotations/ (Pascal VOC 标准)
+          imgs/ + labels/            (部分标注工具)
+        任一组合命中即可;都找不到则抛 FileNotFoundError 给出明确提示。
+        """
+        img_names = ["images", "JPEGImages", "imgs", "data"]
+        ann_names = ["annotations", "Annotations", "labels", "LabelXml", "xmls"]
+        raw_images = next((self.raw_root / n for n in img_names
+                           if (self.raw_root / n).is_dir()), None)
+        raw_annots = next((self.raw_root / n for n in ann_names
+                           if (self.raw_root / n).is_dir()), None)
+        if raw_images is None:
+            raise FileNotFoundError(
+                f"raw 数据集 {self.raw_root} 下找不到图片目录(尝试过 {img_names})")
+        if raw_annots is None:
+            raise FileNotFoundError(
+                f"raw 数据集 {self.raw_root} 下找不到标注目录(尝试过 {ann_names})")
+        return raw_images, raw_annots
+
+    def _build_groups(self, stems: List[str]) -> Optional[Dict[str, str]]:
+        """构造 group_per_image 映射。groups_file 优先;其次 group_by_prefix;都没有返回 None。"""
+        if self.groups_file is not None:
+            mapping: Dict[str, str] = {}
+            p = Path(self.groups_file)
+            with p.open("r", encoding="utf-8", newline="") as f:
+                for row in csv.reader(f):
+                    if len(row) >= 2 and row[0].strip():
+                        mapping[row[0].strip()] = row[1].strip()
+            return {s: mapping.get(s, s) for s in stems}
+        if self.group_by_prefix:
+            n = int(self.group_by_prefix)
+            return {s: s[:n] for s in stems}
+        return None
 
     def _execute(self, run: RunContext) -> Dict:
         logger.info("处理数据集 %r (format=%s, task=%s, split=%s)",
@@ -72,9 +113,11 @@ class DatasetPipeline:
 
             stems, label_per_image, label_bytes = self._scan(staging, classes)
 
+            group_per_image = self._build_groups(stems)
             assignment = split_dataset(
                 stems, self.train_rate, self.val_rate, self.random_state,
                 strategy=self.split_strategy, labels_per_image=label_per_image,
+                group_per_image=group_per_image,
             )
             test_rate = round(1 - self.train_rate - self.val_rate, 6)
             manifest = SplitManifest.build(
@@ -94,10 +137,21 @@ class DatasetPipeline:
                 source_format=self.annotation_format,task=self.task,
                 manifest_ref=manifest_ref
             )
+
+            # 划分报告:类别分布 / bbox 尺寸 / 集间一致性 / 指纹(失败不阻断主流程)
+            try:
+                from od_platform.data_pipeline.split.report import (
+                    build_split_report, write_split_report_json, write_split_report_md)
+                sr = build_split_report(manifest, staging, self.raw_images, classes)
+                write_split_report_json(sr, run.artifact_path("split_report.json"))
+                write_split_report_md(sr, run.artifact_path("split_report.md"))
+                logger.info("划分报告已生成: %s", run.artifact_path("split_report.json").name)
+            except Exception as e:
+                logger.warning("划分报告生成失败(不影响主流程): %s", e)
         return {"counts": counts, "yaml": str(self.yaml_out),
                 "manifest_path": str(manifest_path),
                 "run_dir": str(run.run_dir),
-                "contract_figure": manifest.contract_fingerprint
+                "contract_fingerprint": manifest.contract_fingerprint
                 }
 
 
@@ -123,4 +177,3 @@ class DatasetPipeline:
                         names.append(classes[cid])
             labels_per_image[lbl.stem] = names
         return stems, labels_per_image, label_bytes
-

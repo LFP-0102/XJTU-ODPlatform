@@ -37,7 +37,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--data",default=None, help="数据集文件")
     parser.add_argument("--epochs",type=int, default=200, help="训练轮数")
     parser.add_argument("--batch",default=16, type=int, help="批量大小")
-    parser.add_argument("-imgsz", type=int, default=640, help="图片大小")
+    parser.add_argument("--imgsz", type=int, default=640, help="图片大小")
     parser.add_argument("--device",default="0", help="运行设备")
 
     return parser

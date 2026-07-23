@@ -1,98 +1,91 @@
-"""L1 策略:多标签迭代分层(自实现,不依赖第三方库)。"""
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# @File       : stratified_multilabel.py
+# @Path       : XJTU-ODPlatform/apps/platform/src/od_platform/data_pipeline/split/strategies/stratified_multilabel.py
+# @Project    : XJTU-ODPlatform
+# @Author     : 数据师
+# @Date       : 2026-07-21
+# @Version    : v1.0.0
+# @Description:多标签迭代分层划分(Sechidis 2011 简化版)
+"""多标签迭代分层划分(Sechidis 2011 简化版)。
+
+每张图可能有多个标签(labels_per_image: {stem: [类名]})。目标:让 train/val/test
+每个 split 里各类的比例尽量一致,而不是纯 random 把稀缺类全塞某一组。
+
+算法(稀缺类优先的迭代分配):
+  1. 按类的文档频率升序处理(稀缺类先分,避免最后没得选)。
+  2. 对每个类 c,把"含 c 且未分配"的样本洗牌,逐个分配到"该类当前最缺"的 split
+     (期望数 = 该类总数 × split 比例 - 该 split 已有该类数),同时尊重 split 容量。
+  3. 剩余无标签或未分配的样本按剩余容量随机分。
+
+requires_labels=True:必须传 labels_per_image,否则 split_dataset 会拒绝。
+"""
 from __future__ import annotations
 
 import random
-from collections import defaultdict
-from typing import Dict, List, Sequence, Set
+from collections import Counter, defaultdict
+from typing import Dict, List
 
 from od_platform.common.constants import SplitStrategy
-from od_platform.data_pipeline.split.strategies._common import validate_rates
+from od_platform.data_pipeline.split.strategies._common import (
+    seeded_shuffled, three_way_counts, validate_rates)
 from od_platform.data_pipeline.split.registry import SplitOptions, register_strategy
 
-_EPS = 1e-9   # 比较浮点期望值时的容差
-
-
-def _argmax_tiebreak(primary: Sequence[float], secondary: Sequence[float], rng: random.Random) -> int:
-    """返回使 primary 最大的下标;并列时看 secondary 最大;再并列则(seeded)随机。"""
-    pmax = max(primary)
-    cand = [j for j, v in enumerate(primary) if v >= pmax - _EPS]
-    if len(cand) > 1:
-        smax = max(secondary[j] for j in cand)
-        cand = [j for j in cand if secondary[j] >= smax - _EPS]
-    return rng.choice(sorted(cand)) if len(cand) > 1 else cand[0]
-
-
-def iterative_stratify(sample_labels: List[Set[str]], proportions: Sequence[float],
-                       random_state: int) -> List[int]:
-    """把 N 个多标签样本分到 len(proportions) 个子集,尽量保持每个标签的占比。
-
-    Returns:
-        fold[i] = 第 i 个样本被分到的子集下标(0/1/2 对应 train/val/test)。
-    """
-    n = len(sample_labels)
-    k = len(proportions)
-    fold = [-1] * n
-    if n == 0:
-        return fold
-
-    rng = random.Random(random_state)
-    # 每个标签 → 仍未分配且含该标签的样本下标集合(随分配进行不断缩小)
-    label_to_samples: Dict[str, Set[int]] = defaultdict(set)
-    for i, labs in enumerate(sample_labels):
-        for l in labs:
-            label_to_samples[l].add(i)
-    # 期望:每个子集还"想要"多少样本 / 每个标签在每个子集还想要多少(浮点,随分配递减)
-    desired = [p * n for p in proportions]
-    desired_l: Dict[str, List[float]] = {
-        l: [p * len(s) for p in proportions] for l, s in label_to_samples.items()
-    }
-
-    remaining = set(range(n))
-    while remaining:
-        # 在"还有样本的标签"里挑剩余最少的(最稀有);并列按名字定序后随机。
-        candidates = [l for l, s in label_to_samples.items() if s]
-        if not candidates:
-            break                            # 只剩"无标签"样本,留到下面统一处理
-        min_count = min(len(label_to_samples[l]) for l in candidates)
-        tied = sorted(l for l in candidates if len(label_to_samples[l]) == min_count)
-        l_star = rng.choice(tied)
-        # 把这个最稀有类当前所有剩余样本逐个安置进"最缺它"的子集
-        for i in sorted(label_to_samples[l_star]):
-            if i not in remaining:
-                continue
-            j = _argmax_tiebreak(desired_l[l_star], desired, rng)
-            fold[i] = j
-            remaining.discard(i)
-            for m in sample_labels[i]:        # 该样本所有标签的期望都要相应扣减
-                desired_l[m][j] -= 1
-                label_to_samples[m].discard(i)
-            desired[j] -= 1
-
-    # 无标签样本:按各子集剩余期望从大到小填
-    for i in sorted(remaining):
-        j = _argmax_tiebreak(desired, [0.0] * k, rng)
-        fold[i] = j
-        desired[j] -= 1
-    return fold
+_SPLITS = ("train", "val", "test")
 
 
 @register_strategy(SplitStrategy.STRATIFIED_MULTILABEL, requires_labels=True)
 def stratified_multilabel_split(stems: List[str], options: SplitOptions) -> Dict[str, List[str]]:
-    """按每张图的多标签集合做迭代分层,返回 {"train"/"val"/"test": [stem, ...]}。"""
-    test_rate = validate_rates(options.train_rate, options.val_rate)
-    if options.labels_per_image is None:
-        raise ValueError("stratified_multilabel 策略需要 labels_per_image,但收到 None。")
-    if not stems:
-        return {"train": [], "val": [], "test": []}
+    validate_rates(options.train_rate, options.val_rate)
+    n = len(stems)
+    if n == 0:
+        return {s: [] for s in _SPLITS}
+    n_train, n_val, _ = three_way_counts(n, options.train_rate, options.val_rate)
+    capacity = {"train": n_train, "val": n_val, "test": n - n_train - n_val}
 
-    ordered = sorted(stems)                                   # 复现前提:先把输入顺序固定
-    labels = options.labels_per_image
-    sample_labels: List[Set[str]] = [set(labels.get(s, [])) for s in ordered]
-    fold = iterative_stratify(
-        sample_labels, [options.train_rate, options.val_rate, test_rate], options.random_state
-    )
-    keys = ("train", "val", "test")
-    out: Dict[str, List[str]] = {"train": [], "val": [], "test": []}
-    for stem, j in zip(ordered, fold):
-        out[keys[j]].append(stem)
-    return out
+    labels_per_image = options.labels_per_image or {}
+    label_sets = {s: set(labels_per_image.get(s, [])) for s in stems}
+
+    doc_freq = Counter()
+    for s in stems:
+        for c in label_sets[s]:
+            doc_freq[c] += 1
+
+    rng = random.Random(options.random_state)
+    assignment: Dict[str, str] = {}
+    class_counts = {sp: defaultdict(int) for sp in _SPLITS}
+    remaining = dict(capacity)
+
+    # 稀缺类优先,逐类把含该类的样本按 deficit 分配
+    for cls in sorted(doc_freq, key=lambda c: doc_freq[c]):
+        candidates = [s for s in stems if cls in label_sets[s] and s not in assignment]
+        rng.shuffle(candidates)
+        desired = {sp: doc_freq[cls] * (capacity[sp] / n) for sp in _SPLITS}
+
+        for s in candidates:
+            best_sp, best_deficit = None, None
+            for sp in _SPLITS:
+                if remaining[sp] <= 0:
+                    continue
+                deficit = desired[sp] - class_counts[sp][cls]
+                if best_deficit is None or deficit > best_deficit:
+                    best_deficit, best_sp = deficit, sp
+            if best_sp is None:
+                best_sp = max(_SPLITS, key=lambda sp: remaining[sp])
+            assignment[s] = best_sp
+            remaining[best_sp] -= 1
+            class_counts[best_sp][cls] += 1
+
+    # 剩余(无标签 / 未分配)按剩余容量随机分
+    leftover = seeded_shuffled([s for s in stems if s not in assignment], rng)
+    for s in leftover:
+        sp = max(_SPLITS, key=lambda x: remaining[x])
+        if remaining[sp] <= 0:
+            sp = "test"
+        assignment[s] = sp
+        remaining[sp] -= 1
+
+    result: Dict[str, List[str]] = {sp: [] for sp in _SPLITS}
+    for s in stems:
+        result[assignment[s]].append(s)
+    return result

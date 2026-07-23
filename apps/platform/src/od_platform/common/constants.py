@@ -12,9 +12,13 @@ class AnnotationFormat:
     PASCAL_VOC = 'pascal_voc'
     COCO = 'coco'
     YOLO = "yolo"
+    LABELME = 'labelme'
+    DOTA = 'dota'
+    CVAT = 'cvat'
+    CREATEML = 'createml'
     @classmethod
     def all(cls) ->Tuple[str, ...]:
-        return cls.PASCAL_VOC, cls.COCO, cls.YOLO
+        return cls.PASCAL_VOC, cls.COCO, cls.YOLO, cls.LABELME, cls.DOTA, cls.CVAT, cls.CREATEML
 
 class Task:
     """支持的任务类型"""
@@ -28,10 +32,12 @@ class Task:
 class SplitStrategy:
     RANDOM = "random"
     STRATIFIED_MULTILABEL = 'stratified_multilabel' # 基于多标签的分层划分
+    GROUP = 'group'                       # 按组划分(同 group 整体进同一 split)
+    STRATIFIED_WEIGHTED = 'stratified_weighted'  # 按主类逆频率加权的分层划分
 
     @classmethod
     def all(cls) ->Tuple[str, ...]:
-        return cls.RANDOM, cls.STRATIFIED_MULTILABEL
+        return cls.RANDOM, cls.STRATIFIED_MULTILABEL, cls.GROUP, cls.STRATIFIED_WEIGHTED
 
 
 DEFAULT_RANDOM_STATE = 42

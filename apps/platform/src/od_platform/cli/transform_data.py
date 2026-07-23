@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+from pathlib import Path
 
 from od_platform.common import paths
 from od_platform.common.constants import (
@@ -48,6 +49,10 @@ def main(argv=None) -> int:
     p.add_argument("--train-rate", type=float, default=DEFAULT_TRAIN_RATE)
     p.add_argument("--val-rate", type=float, default=DEFAULT_VAL_RATE)
     p.add_argument("--seed", type=int, default=DEFAULT_RANDOM_STATE)
+    p.add_argument("--group-by-prefix", type=int, default=None, metavar="N",
+                   help="按文件名前 N 个字符作为 group 切分(同 group 不拆散,适用于视频帧序列)")
+    p.add_argument("--groups-file", default=None, metavar="PATH",
+                   help="group 映射 CSV(两列: stem,group),优先于 --group-by-prefix")
     a = p.parse_args(argv)
 
     # D1 纪律:控制台 + 端级(全局)日志,入口装一次(get_logger 一行不改)。日志统一落 logging/。
@@ -59,6 +64,8 @@ def main(argv=None) -> int:
         pipe = DatasetPipeline(
             a.dataset, a.fmt, task=a.task, train_rate=a.train_rate, val_rate=a.val_rate,
             classes=a.classes, random_state=a.seed, split_strategy=a.strategy,
+            group_by_prefix=a.group_by_prefix,
+            groups_file=Path(a.groups_file) if a.groups_file else None,
             run=run,
         )
         try:
@@ -69,6 +76,7 @@ def main(argv=None) -> int:
 
     print("✅ 完成:", res["counts"], "->", res["yaml"])
     print("   现场:", res["run_dir"], "(日志见 logging/transform/,run_id 相同)")
+    print("   指纹:", res["contract_fingerprint"])
     return EXIT_OK
 
 

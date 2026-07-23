@@ -12,27 +12,27 @@
 import sys
 import cv2
 from ultralytics import YOLO
-from od_platform.frame_source import create_frame_source        # 帧源模块
+from od_platform.frame_source import create_frame_source       # 帧源模块
 from od_platform.visualization import BeautifyVisualizer         # 美化模块
 
-model = YOLO("train3-20251223-112728-yolov8n-best.pt")
+model = YOLO(r"C:\Users\fym\Desktop\XJTU-ODPlatform\runs\training\20260720-162225\weights\best.pt")
 viz = BeautifyVisualizer(
     labels=list(model.names.values()),
     label_mapping={"person": "人员", "head": "未佩戴安全帽","ordinary_clothes": "普通衣物",
-                "reflective_vest":"反光衣","safety_helmet":"安全帽"},
+                "reflective_vest":"反光衣","hat":"安全帽"},
     color_mapping={
-        "person": (255, 218, 114),  # 颜色顺序是BGR
-        "head": (0, 0, 255),
-        "ordinary_clothes": (0, 255, 0),
+        "person": (255, 0, 0),
+        "head": (0, 255, 0),
+        "ordinary_clothes": (0, 0, 255),
         "reflective_vest": (255, 255, 0),
-        "safety_helmet": (0, 255, 255)
+        "hat": (0, 255, 255)
     }
 )
 
 def run(source: str) -> None:
     with create_frame_source(source) as src:          # ← 帧源:换字符串即换源
         for frame in src:
-            result = model(frame.image, verbose=False, classes = [0])[0]
+            result = model(frame.image, verbose=False)[0]
             dets = BeautifyVisualizer.from_yolo_results(   # ← 衔接点:打包
                 boxes=result.boxes.xyxy.cpu().numpy(),
                 confidences=result.boxes.conf.cpu().numpy(),

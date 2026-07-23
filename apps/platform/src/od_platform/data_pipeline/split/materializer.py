@@ -12,7 +12,7 @@ from pathlib import Path
 from  typing import Dict, Tuple
 
 from od_platform.common.paths import  PROCESS_DATA_DIR
-from od_platform.data_pipeline.split.manifest import SplitManifest
+from od_platform.common.lineage import SplitManifest
 
 logger = logging.getLogger(__name__)
 
@@ -61,8 +61,23 @@ class SplitOutputDirs:
 def _copy_pair(img: Path, lbl: Path, images_dir: Path, labels_dir: Path) -> None:
     images_dir.mkdir(parents=True, exist_ok=True)
     labels_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(img, images_dir / img.name)
+    dst_img = images_dir / img.name
+    # 标签:直接复制(文本文件,不存在 corrupt)
     shutil.copy2(lbl, labels_dir / lbl.name)
+    # 图片:PIL 重新保存(规范化,修复 corrupt JPEG 的 EOI/结构损坏);
+    # 这样 processed 永远干净,训练不再报 corrupt。PIL 处理失败则原样复制兜底。
+    try:
+        from PIL import Image
+        with Image.open(img) as im:
+            im.load()
+            fmt = im.format or "JPEG"
+            if fmt == "JPEG":
+                im.save(dst_img, "JPEG", quality=95)
+            else:
+                im.save(dst_img)
+    except Exception as e:
+        logger.warning("图片规范化失败 %s,原样复制: %s", img.name, e)
+        shutil.copy2(img, dst_img)
 
 @dataclass(frozen=True)
 class SplitSourceDirs:

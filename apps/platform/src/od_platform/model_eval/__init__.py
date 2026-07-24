@@ -20,6 +20,22 @@
 """
 from __future__ import annotations
 
+from od_platform.model_eval.analyzer import (
+    ConfusionAnalysis,
+    ClassRanking,
+    PerClassDiff,
+    extract_confusion_analysis,
+    rank_classes,
+    diagnose_problem_classes,
+    compare_per_class,
+    render_confusion_markdown,
+    render_ranking_markdown,
+)
+from od_platform.model_eval.history import (
+    EvalRecord,
+    EvalHistory,
+    TrendReport,
+)
 from od_platform.model_eval.metrics import EvalMetrics
 from od_platform.model_eval.report import EvalReport, ComparisonReport
 from od_platform.model_eval.service import (
@@ -27,11 +43,28 @@ from od_platform.model_eval.service import (
 )
 
 __all__ = [
+    # 指标
     "EvalMetrics",
+    # 报告
     "EvalReport",
     "ComparisonReport",
+    # 服务
     "EvalResult",
     "ComparisonResult",
     "evaluate_model",
     "compare_models",
+    # 分析
+    "ConfusionAnalysis",
+    "ClassRanking",
+    "PerClassDiff",
+    "extract_confusion_analysis",
+    "rank_classes",
+    "diagnose_problem_classes",
+    "compare_per_class",
+    "render_confusion_markdown",
+    "render_ranking_markdown",
+    # 历史
+    "EvalRecord",
+    "EvalHistory",
+    "TrendReport",
 ]

@@ -14,7 +14,7 @@
   4. 落盘报告(report.json + result.csv + report.md)
 
 复用:
-  · RunContext("evaluation")        —— runs/model_evaluation/<run_id>/
+  · RunContext("evaluation", ...)    —— runs/evaluation/<sub_dir>/<run_id>/
   · YOLOValConfig / build_val_config —— val 配置(split / conf / iou / plots ...)
   · TrainMetrics.from_yolo_results   —— 原生指标抽取(EvalMetrics 内部复用)
   · refs.resolve_model               —— 模型引用解析
@@ -96,7 +96,7 @@ def _run_val(model_arg: str, config: Any, data_yaml: Path, run: RunContext) -> A
     """调 ultralytics model.val(), 返回 results.
 
     ★ 目录对齐: 让 ultralytics 的图表(PR/混淆矩阵/val_batch)直接落进我们的
-       runs/model_evaluation/<run_id>/ 下, 和 report.json/csv/md 聚在一处.
+       runs/evaluation/<sub_dir>/<run_id>/ 下, 和 report.json/csv/md 聚在一处.
        走 "project=run.run_dir, name='ultra'" 的技巧: ultralytics 会建
        <project>/<name>/ 放图表, 避免和我们的 report.* 同名冲突.
     """
@@ -152,7 +152,7 @@ def evaluate_model(*, config: Any, data_yaml: Path, run: RunContext,
     Args:
         config:     YOLOValConfig 实例
         data_yaml:  数据集 yaml 路径
-        run:        RunContext("evaluation")
+        run:        RunContext("evaluation", sub_dir="single")
         model_ref:  模型引用(名 / 路径)
         merger:     配置溯源(可选, 打来源报告)
         write_report: 是否落盘 report.json / result.csv / report.md
@@ -246,7 +246,7 @@ def compare_models(*, config: Any, data_yaml: Path, run: RunContext,
     Args:
         config:     YOLOValConfig 实例
         data_yaml:  数据集 yaml 路径
-        run:        RunContext("evaluation")
+        run:        RunContext("evaluation", sub_dir="compare")
         model_refs: 模型引用列表
         merger:     配置溯源(可选)
         write_report: 是否落盘 comparison.json / comparison.csv / comparison.md

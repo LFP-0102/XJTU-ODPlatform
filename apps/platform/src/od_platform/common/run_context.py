@@ -9,17 +9,32 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 from od_platform.common import paths
 
 class RunContext:
-    def __init__(self, subsystem: str) -> None:
-        if not subsystem or "/" in subsystem in (".", ".."):
-            raise ValueError(f"非法 subsystem: {subsystem}")
-        self.subsystem = subsystem  # runs目录下的子目录名,每个子系统对应一个
+    def __init__(self, subsystem: str, sub_dir: Optional[str] = None) -> None:
+        """创建运行时上下文.
+
+        Args:
+            subsystem: runs 目录下的子系统名, 如 "training", "evaluation"
+            sub_dir:   子系统内的子目录(可选), 如 "single", "compare".
+                       生成路径为 runs/<subsystem>/<sub_dir>/<run_id>/
+        """
+        # 校验: 不允许空值、相对路径穿越
+        for name, val in [("subsystem", subsystem), ("sub_dir", sub_dir)]:
+            if val is not None:
+                if not val or "/" in val or "\\" in val or val in (".", ".."):
+                    raise ValueError(f"非法 {name}: {val!r}")
+        self.subsystem = subsystem  # runs目录下的子目录名
+        self.sub_dir = sub_dir      # 子系统内的子目录(可选)
         self.started_at = datetime.now()
         self.run_id: str = self.started_at.strftime("%Y%m%d-%H%M%S")
-        self.run_dir = paths.RUNS_DIR / self.subsystem / self.run_id
+        base = paths.RUNS_DIR / self.subsystem
+        if sub_dir:
+            base = base / sub_dir
+        self.run_dir = base / self.run_id
 
     @property
     def created_at(self) -> str:

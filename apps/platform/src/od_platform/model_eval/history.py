@@ -44,7 +44,7 @@ from od_platform.model_eval.report import EvalReport, _fmt
 
 logger = logging.getLogger(__name__)
 
-_HISTORY_DIR: Path = RUNS_DIR / "model_evaluation" / "_history"
+_HISTORY_DIR: Path = RUNS_DIR / "evaluation" / "_history"
 
 
 # ============================================================
@@ -181,9 +181,14 @@ class EvalHistory:
 
     @staticmethod
     def _history_path(data_yaml: str) -> Path:
-        """历史文件路径: runs/model_evaluation/_history/<dataset_name>.json"""
+        """历史文件路径: runs/evaluation/_history/<dataset_name>.json"""
         stem = Path(data_yaml).stem
-        return _HISTORY_DIR / f"{stem}_eval_history.json"
+        new_path = _HISTORY_DIR / f"{stem}_eval_history.json"
+        # 向后兼容: 如果旧位置有历史文件而新位置还没有, 自动迁移
+        old_path = RUNS_DIR / "model_evaluation" / "_history" / f"{stem}_eval_history.json"
+        if old_path.exists() and not new_path.exists():
+            return old_path
+        return new_path
 
     def save(self, file_path: Optional[Path] = None) -> Path:
         """保存为 JSON."""

@@ -9,7 +9,8 @@
 
 职责(与 odp-train / odp-infer 同构):
   1. argparse -> cli_args dict, build_val_config 建好 val 配置
-  2. RunContext("evaluation") 定 run_id / run_dir(runs/model_evaluation/<run_id>)
+  2. RunContext("evaluation", sub_dir="single"/"compare") 定 run_id / run_dir
+    runs/evaluation/single/<run_id>/ 或 runs/evaluation/compare/<run_id>/
   3. get_logger 装 handler(console + file), 用 run_id + 模型名预命名日志
   4. --model 单模型 -> evaluate_model; --models 多模型 -> compare_models
   5. 退出码: 0 成功, 1 失败(CI 友好)
@@ -103,7 +104,8 @@ def main(argv: list[str] | None = None) -> int:
     data_yaml = refs.resolve_dataset_yaml(args.data) if args.data else refs.resolve_dataset_yaml(
         getattr(config, "data", None) or "")
 
-    with RunContext("evaluation") as run:
+    sub_dir = "single" if args.model else "compare"
+    with RunContext("evaluation", sub_dir=sub_dir) as run:
         # 模型名用于日志预命名(单模型用 --model, 多模型用第一个)
         first_model = args.model or (args.models[0] if args.models else "eval")
         get_logger(

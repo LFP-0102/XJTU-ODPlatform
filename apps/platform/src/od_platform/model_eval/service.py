@@ -39,7 +39,7 @@ from od_platform.model_eval.analyzer import (
 )
 from od_platform.model_eval.history import EvalHistory
 from od_platform.model_eval.metrics import EvalMetrics
-from od_platform.model_eval.report import EvalReport, ComparisonReport
+from od_platform.model_eval.report import EvalReport, ComparisonReport, _fmt
 
 logger = logging.getLogger(__name__)
 

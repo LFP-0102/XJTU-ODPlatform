@@ -23,6 +23,14 @@ from od_platform.common.run_context import RunContext
 from od_platform.common.report_config import log_config_report
 from od_platform.model_train.archive import archive_best_weight
 from od_platform.model_train.result import TrainMetrics, log_train_metrics
+from od_platform.model_train.tracking import (
+    TrainTrackingHooks,
+    TrainStartEvent,
+    TrainEndEvent,
+    TrainErrorEvent,
+    build_tracking_hooks_from_config,
+    _make_ultralytics_callback,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -43,15 +51,34 @@ def _resolve_model_arg(model: str) -> str:
     logger.info(f"本地未发现预训练模型{p.name}, Ultralytics会自动下载该模型 {model}")
     return model
 
-def _run_training(model_arg: str, config: Any, data_yaml: Path, run: RunContext) -> Any:
+def _run_training(model_arg: str, config: Any, data_yaml: Path, run: RunContext,
+                  tracking_hooks: TrainTrackingHooks | None = None) -> Any:
     from ultralytics import YOLO
     model = YOLO(model_arg)
+
+    if tracking_hooks is not None:
+        ultralytics_cb = _make_ultralytics_callback(tracking_hooks)
+        for event, handler in ultralytics_cb.items():
+            model.add_callback(event, handler)
+
     kwargs = config.to_ultralytics_kwargs()
     kwargs.pop("data", None)
     kwargs.pop("model", None)
     kwargs.update(project=str(run.run_dir.parent), name=run.run_id, exist_ok = True)
 
-    return model.train(data=str(data_yaml), **kwargs)
+    # ★ ODPlatform 接管 MLflow 时, 禁用 ultralytics 内置 MLflow, 避免双写冲突
+    mlflow_enabled = getattr(config, "mlflow_enabled", False)
+    if mlflow_enabled:
+        from ultralytics.utils import SETTINGS
+        _mlflow_backup = SETTINGS.get("mlflow", None)
+        SETTINGS["mlflow"] = False
+        try:
+            return model.train(data=str(data_yaml), **kwargs)
+        finally:
+            if _mlflow_backup is not None:
+                SETTINGS["mlflow"] = _mlflow_backup
+    else:
+        return model.train(data=str(data_yaml), **kwargs)
 
 def _write_audit(run: RunContext, config: Any, merger: Optional[Any],
                 data_yaml: Path,stem: str, metrics: TrainMetrics) -> Path:
@@ -89,15 +116,30 @@ def train_yolo(*, config: Any, data_yaml: Path, run: RunContext, stem: str,
     model_ref = config.model if hasattr(config, "model") else "yolov8n.pt"
     model_arg = _resolve_model_arg(model_ref)
 
+    # ★ 构造追踪钩子
+    tracking_hooks = build_tracking_hooks_from_config(config, run)
+
+    # ★ 触发训练开始
+    tracking_hooks.fire_train_start(TrainStartEvent(
+        run_id=run.run_id,
+        experiment_name=getattr(config, "experiment_name", None),
+        config_snapshot=config.to_audit_snapshot(),
+        data_yaml=str(data_yaml),
+        model=model_ref,
+    ))
+
     # 训练
     try:
-        results = _run_training(model_arg, config, data_yaml, run)
+        results = _run_training(model_arg, config, data_yaml, run, tracking_hooks)
     except KeyboardInterrupt:
         logger.warn(f"训练被手动中断 | run_id={run.run_id}")
         logger.warn(f"训练结果保留在 {run.run_dir}")
+        tracking_hooks.fire_train_error(
+            TrainErrorEvent(run_id=run.run_id, exception=Exception("训练被手动中断")))
         return TrainResult(success=False, run_id=run.run_id, save_dir=run.run_dir,message="训练被手动中断")
     except Exception as e:
         logger.exception(f"训练失败 | run_id={run.run_id} 错误如下：{e}")
+        tracking_hooks.fire_train_error(TrainErrorEvent(run_id=run.run_id, exception=e))
         return TrainResult(success=False, run_id=run.run_id, save_dir=run.run_dir,
                         message=f"训练失败 | run_id={run.run_id} 错误如下：{e}")
     # 成功记录指标
@@ -107,6 +149,11 @@ def train_yolo(*, config: Any, data_yaml: Path, run: RunContext, stem: str,
     _write_audit(run, config, merger, data_yaml, stem, metrics)
 
     best = archive_best_weight(run.run_dir, stem) if archive else None
+
+    # ★ 触发训练完成
+    tracking_hooks.fire_train_end(TrainEndEvent(
+        run_id=run.run_id, save_dir=run.run_dir, best_weight=best, metrics=metrics,
+    ))
 
     logger.info(f"训练完成 | run_id={run.run_id} | 最佳模型保存在 {best}")
 

@@ -44,9 +44,12 @@ odp-validate = "od_platform.cli.validate_data:main"
 odp-gen-config = "od_platform.cli.gen_config:main"
 odp-train = "od_platform.cli.train_model:main"
 odp-infer= "od_platform.cli.infer_model:main"
+odp-tensorboard = "od_platform.cli.tensorboard:main"
 odp-eval = "od_platform.cli.evaluate_model:main"
 
 
+[project.optional-dependencies]
+tracking = ["mlflow>=2.14.0", "tensorboard>=2.17.0"]
 
 
 [tool.hatch.version]

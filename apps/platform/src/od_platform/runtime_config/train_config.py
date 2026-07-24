@@ -34,7 +34,10 @@ class YOLOTrainConfig(BaseConfig):
     # (BaseConfig 已经把 verbose 放进去; 这里继续扩)
     # ============================================================
     FRAMEWORK_ONLY_FIELDS: ClassVar[set[str]] = (
-        BaseConfig.FRAMEWORK_ONLY_FIELDS | {"experiment_name"}
+        BaseConfig.FRAMEWORK_ONLY_FIELDS | {"experiment_name",
+                                             "mlflow_enabled",
+                                             "mlflow_tracking_uri",
+                                             "mlflow_experiment_name"}
     )
 
     # ============================================================
@@ -780,6 +783,55 @@ class YOLOTrainConfig(BaseConfig):
             "examples": [None],
             "tips": ["None: 使用默认增强", "list: 自定义 Albumentations 变换"],
             "yaml_comment": "自定义增强(高级用户)",
+        },
+    )
+
+    # ============================================================
+    # 实验追踪
+    # ============================================================
+
+    mlflow_enabled: bool = Field(
+        default=False,
+        description="启用 MLflow 实验追踪",
+        json_schema_extra={
+            "group":    "实验追踪",
+            "examples": [False, True],
+            "tips": [
+                "True: 将训练参数和每轮指标记录到 MLflow",
+                "需要先安装 mlflow: pip install mlflow",
+                "追踪数据保存在 runs/mlruns/ 或指定的 mlflow_tracking_uri",
+            ],
+            "yaml_comment": "是否启用 MLflow 实验追踪",
+        },
+    )
+
+    mlflow_tracking_uri: Optional[str] = Field(
+        default=None,
+        description="MLflow Tracking URI",
+        json_schema_extra={
+            "group":    "实验追踪",
+            "examples": [None, "http://localhost:5000", "sqlite:///mlflow.db"],
+            "tips": [
+                "None: 使用本地默认存储 (runs/mlruns/)",
+                "远程: http://<host>:<port> 连接远程 MLflow 服务",
+                "本地数据库: sqlite:///mlflow.db",
+            ],
+            "yaml_comment": "MLflow Tracking URI (None=本地默认)",
+        },
+    )
+
+    mlflow_experiment_name: Optional[str] = Field(
+        default=None,
+        description="MLflow 实验名称",
+        json_schema_extra={
+            "group":    "实验追踪",
+            "examples": [None, "helmet_detection", "safety_gear_v1"],
+            "tips": [
+                "None: 自动使用 experiment_name 字段值",
+                "自定义: 覆盖 experiment_name 作为 MLflow 实验名",
+                "同一实验名下的多次运行自动分组",
+            ],
+            "yaml_comment": "MLflow 实验名称 (None=使用 experiment_name)",
         },
     )
 

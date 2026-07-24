@@ -306,7 +306,7 @@ class YOLOInferConfig(BaseConfig):
     )
 
     show: bool = Field(
-        default=False,
+        default=True,
         description="实时显示推理结果",
         json_schema_extra={
             "group":    "输出控制",

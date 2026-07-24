@@ -57,6 +57,7 @@ from od_platform.runtime_config.base_config   import BaseConfig
 from od_platform.runtime_config.train_config  import YOLOTrainConfig
 from od_platform.runtime_config.val_config    import YOLOValConfig
 from od_platform.runtime_config.infer_config  import YOLOInferConfig   # ★ infer 闭环
+from od_platform.runtime_config.pipeline_config import InferPipelineConfig  # ★ 推理管线(帧源 + 美化)
 
 # 加载器
 from od_platform.runtime_config.loaders import (
@@ -246,6 +247,7 @@ __all__ = [
     "YOLOTrainConfig",
     "YOLOValConfig",
     "YOLOInferConfig",          # ★ infer 闭环
+    "InferPipelineConfig",      # ★ 推理管线(帧源 + 美化)
 
     # 加载器
     "YAMLLoader",

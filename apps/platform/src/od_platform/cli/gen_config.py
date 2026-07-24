@@ -29,17 +29,24 @@ def main():
     parser.add_argument("-o","--output",type=Path, default=None, help="输出路径")
     parser.add_argument("--overwrite", action="store_true", help="是否覆盖输出路径")
     parser.add_argument('--no-backup', action="store_true", help="是否不备份输出路径")
+    parser.add_argument("--mlflow", action="store_true", help="预设 mlflow_enabled: true (训练配置专用)")
     args = parser.parse_args()
 
     config_class, title = CONFIG_REGISTRY[args.name]
     output_path = args.output or runtime_config_path(args.name)
+
+    overrides = None
+    if getattr(args, "mlflow", False):
+        overrides = {"mlflow_enabled": True}
+
     gen = ConfigGenerator()
     success = gen.generate(
         config_class,
         output_path,
         overwrite=args.overwrite,
         backup=not args.no_backup,
-        title =title
+        title=title,
+        overrides=overrides,
     )
 
     if success:

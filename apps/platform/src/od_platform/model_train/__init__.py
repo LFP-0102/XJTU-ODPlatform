@@ -23,6 +23,9 @@
       build_tracking_hooks_from_config
   归档:
       archive_best_weight
+  报告:
+      TrainingReport, EpochRow, save_report,
+      build_training_report, generate_report
 """
 from __future__ import annotations
 
@@ -38,6 +41,8 @@ from od_platform.model_train.tracking import (
     MlflowTracker,
     build_tracking_hooks_from_config,
 )
+from od_platform.model_train.report import TrainingReport, EpochRow, save_report
+from od_platform.model_train.report_builder import build_training_report, generate_report
 
 __all__ = [
     "train_yolo",
@@ -53,4 +58,10 @@ __all__ = [
     "TrainErrorEvent",
     "MlflowTracker",
     "build_tracking_hooks_from_config",
+    # 报告
+    "TrainingReport",
+    "EpochRow",
+    "save_report",
+    "build_training_report",
+    "generate_report",
 ]

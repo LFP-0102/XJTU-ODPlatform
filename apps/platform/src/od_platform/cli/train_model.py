@@ -24,6 +24,7 @@ from od_platform.common.run_context import RunContext
 from od_platform.runtime_config import build_train_config
 
 from od_platform.model_train.service import train_yolo
+from od_platform.model_train.report_builder import generate_report
 
 
 _CLI_SWITCHES = {'config', "no_archive"}
@@ -70,6 +71,12 @@ def main() ->int:
                         )
         if result.success:
             logger.info("训练成功")
+            logger.info("正在生成训练报告...")
+            report_path = generate_report(run_id=run.run_id)
+            if report_path:
+                logger.info("训练报告已生成: %s", report_path)
+            else:
+                logger.warning("训练报告生成失败")
         else:
             logger.error("训练失败")
     return 0 if result.success else 1

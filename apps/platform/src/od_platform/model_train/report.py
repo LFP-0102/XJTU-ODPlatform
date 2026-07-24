@@ -1,19 +1,28 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""训练分析报告——数据模型 + Markdown 渲染.
+# @File       : report.py
+# @Path       : XJTU-ODPlatfrom/apps/platform/src/od_platform/model_train/report.py
+# @Project    : XJTU-ODPlatfrom
+# @Author     : Matri
+# @Date       : 2026-07-24
+# @Version    : v1.0.0
+# @Description:训练分析报告——数据模型 + Markdown 渲染
+# @ChangeLog:
+#   2026-07-24 | Matri | v1.0.0 | 从 train_report 迁移至 model_train
+"""训练分析报告数据模型.
 
-设计纪律(与 model_eval/report.py 同款):
+设计纪律:
   · TrainingReport 是纯数据
   · render_markdown() 只消费数据不持有数据
   · to_dict() 用于 JSON 序列化(NaN -> null)
 """
 from __future__ import annotations
 
+import csv
 import math
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
-
-from od_platform.train_report.readers import EpochRow
 
 
 def _fmt(v: Optional[float]) -> str:
@@ -30,6 +39,27 @@ def _fmt_ms(v: Optional[float]) -> str:
     if isinstance(v, float) and math.isnan(v):
         return "N/A"
     return f"{v:.2f} ms"
+
+
+# ============================================================
+# EpochRow: results.csv 单行
+# ============================================================
+
+@dataclass(frozen=True)
+class EpochRow:
+    """单轮训练/验证指标(从 results.csv 解析)."""
+    epoch: int
+    time_seconds: float = 0.0
+    train_box_loss: Optional[float] = None
+    train_cls_loss: Optional[float] = None
+    train_dfl_loss: Optional[float] = None
+    val_box_loss: Optional[float] = None
+    val_cls_loss: Optional[float] = None
+    val_dfl_loss: Optional[float] = None
+    precision: Optional[float] = None
+    recall: Optional[float] = None
+    mAP50: Optional[float] = None
+    mAP50_95: Optional[float] = None
 
 
 # ============================================================
@@ -175,8 +205,8 @@ class TrainingReport:
 
         lines.append("### 1.1 基本信息")
         lines.append("")
-        lines.append(f"| 项目 | 内容 |")
-        lines.append(f"|------|------|")
+        lines.append("| 项目 | 内容 |")
+        lines.append("|------|------|")
         lines.append(f"| 数据集名称 | {self.dataset_name or '(未知)'} |")
         lines.append(f"| 配置文件 | `{self.dataset_yaml}` |")
         lines.append(f"| 类别数 | {self.num_classes} |")
@@ -259,8 +289,8 @@ class TrainingReport:
 
         lines.append("### 2.1 任务与模型")
         lines.append("")
-        lines.append(f"| 项目 | 内容 |")
-        lines.append(f"|------|------|")
+        lines.append("| 项目 | 内容 |")
+        lines.append("|------|------|")
         lines.append(f"| 任务类型 | {self.task} |")
         lines.append(f"| 模型 | {self.model_name} |")
         lines.append(f"| 预训练 | {self.pretrained} |")
@@ -387,7 +417,7 @@ class TrainingReport:
                     lines.append(f"- 最终较最佳下降 {_fmt(best_mAP - last_mAP)}, 可能出现过拟合")
             lines.append("")
 
-        # 逐轮表格(折叠超长)
+        # 逐轮表格
         lines.append("**逐轮指标**:")
         lines.append("")
         cols = ["Epoch", "box_loss", "cls_loss", "val_box", "val_cls", "Precision", "Recall", "mAP50", "mAP50-95"]
@@ -445,7 +475,7 @@ class TrainingReport:
             lines.append("暂无特定改进建议。")
         lines.append("")
         lines.append("---")
-        lines.append(f"*报告由 ODPlatform `odp-report` 自动生成 · run_id=`{self.run_id}`*")
+        lines.append(f"*报告由 ODPlatform 自动生成 · run_id=`{self.run_id}`*")
 
 
 # ============================================================
@@ -454,7 +484,6 @@ class TrainingReport:
 
 def save_report(report: TrainingReport, path: Any) -> None:
     """将 TrainingReport 保存为 Markdown 文件."""
-    from pathlib import Path
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(report.render_markdown(), encoding="utf-8")

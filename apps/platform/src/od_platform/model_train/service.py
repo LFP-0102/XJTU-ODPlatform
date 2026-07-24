@@ -56,6 +56,31 @@ def _run_training(model_arg: str, config: Any, data_yaml: Path, run: RunContext,
     from ultralytics import YOLO
     model = YOLO(model_arg)
 
+    # ★ 注册 TensorBoard SummaryWriter
+    from torch.utils.tensorboard import SummaryWriter
+    tb_writer = SummaryWriter(log_dir=str(run.run_dir))
+
+    def _tb_on_fit_epoch_end(trainer):
+        try:
+            epoch = getattr(trainer, "epoch", -1) + 1
+            for k, v in (getattr(trainer, "metrics", {}) or {}).items():
+                try:
+                    tb_writer.add_scalar(str(k), float(v), epoch)
+                except (TypeError, ValueError):
+                    pass
+            tb_writer.flush()
+        except Exception:
+            pass
+
+    def _tb_on_train_end(trainer):
+        try:
+            tb_writer.close()
+        except Exception:
+            pass
+
+    model.add_callback("on_fit_epoch_end", _tb_on_fit_epoch_end)
+    model.add_callback("on_train_end", _tb_on_train_end)
+
     if tracking_hooks is not None:
         ultralytics_cb = _make_ultralytics_callback(tracking_hooks)
         for event, handler in ultralytics_cb.items():

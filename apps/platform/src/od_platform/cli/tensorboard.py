@@ -54,8 +54,7 @@ def main() -> int:
     tb.configure(argv=argv)
     url = f"http://{args.host}:{args.port}/" if not args.bind_all else f"http://localhost:{args.port}/"
     print(f"TensorBoard 已启动: {url}")
-    tb.launch()
-    return 0
+    sys.exit(tb.main())
 
 
 if __name__ == "__main__":

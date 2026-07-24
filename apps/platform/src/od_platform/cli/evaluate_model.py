@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+from pathlib import Path
 from typing import Any, Dict
 
 from od_platform.common import paths, refs
@@ -40,12 +41,14 @@ def _build_parser() -> argparse.ArgumentParser:
         prog="odp-eval",
         description="模型评估(单模型评估 / 多模型对比)",
     )
-    # 模型: --model(单个) 与 --models(多个) 二选一
+    # 模型: --model(单个) / --models(多个) / --from-infer(推理目录) 三选一
     grp = p.add_mutually_exclusive_group(required=True)
     grp.add_argument("--model", type=str, default=None,
                      help="单个模型引用(名 / 路径), 如 best.pt")
     grp.add_argument("--models", type=str, nargs="+", default=None,
                      help="多个模型引用(对比评估), 如 yolo11n.pt yolo11s.pt")
+    grp.add_argument("--from-infer", type=str, default=None, metavar="DIR",
+                     help="从 odp-infer 推理输出目录评估 (需要 --data + --split)")
 
     # 数据集
     p.add_argument("--data", default=None,
@@ -71,7 +74,7 @@ def _build_parser() -> argparse.ArgumentParser:
     return p
 
 
-_CLI_SWITCHES = {"config", "no_archive", "model", "models", "log_level", "no_plots"}
+_CLI_SWITCHES = {"config", "no_archive", "model", "models", "from_infer", "log_level", "no_plots"}
 
 
 def _collect_cli_overrides(args: argparse.Namespace) -> Dict[str, Any]:
@@ -101,13 +104,27 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     # 2) 解析数据集 yaml
-    data_yaml = refs.resolve_dataset_yaml(args.data) if args.data else refs.resolve_dataset_yaml(
-        getattr(config, "data", None) or "")
+    # --from-infer 模式要求在参数里显式传 --data (GT 来源),
+    # --model / --models 可以从 config.data 或 args.data 获取
+    if args.from_infer and not args.data:
+        sys.stderr.write("--from-infer 需要指定 --data (数据集, 用于提供 ground truth)\n")
+        return 1
 
-    sub_dir = "single" if args.model else "compare"
+    if args.from_infer:
+        data_yaml = refs.resolve_dataset_yaml(args.data) if args.data else None
+    else:
+        data_yaml = refs.resolve_dataset_yaml(
+            args.data if args.data else (getattr(config, "data", None) or "")
+        )
+
+    sub_dir = "single" if args.model else ("compare" if args.models else "infer")
     with RunContext("evaluation", sub_dir=sub_dir) as run:
-        # 模型名用于日志预命名(单模型用 --model, 多模型用第一个)
-        first_model = args.model or (args.models[0] if args.models else "eval")
+        # 模型名用于日志预命名(单模型用 --model, 多模型用第一个, infer 用目录名)
+        first_model = (
+            args.model
+            or (args.models[0] if args.models else None)
+            or (Path(args.from_infer).name if args.from_infer else "eval")
+        )
         get_logger(
             base_path=paths.LOGGING_DIR,
             log_type="evaluate",
@@ -118,9 +135,23 @@ def main(argv: list[str] | None = None) -> int:
         logger = logging.getLogger("od_platform")
         logger.info("=" * 60)
         logger.info("odp-eval 启动 | run_id=%s", run.run_id)
-        logger.info("数据集: %s | split=%s", data_yaml, getattr(config, "split", "val"))
 
-        if args.model:
+        if args.from_infer:
+            # 从推理结果评估 —— 不跑 model.val(), 而是读预测标签 vs GT
+            from od_platform.model_eval import evaluate_from_infer
+
+            logger.info("模式: from-infer | 推理目录: %s", args.from_infer)
+            logger.info("数据集: %s | split=%s", data_yaml, getattr(config, "split", "val"))
+
+            result = evaluate_from_infer(
+                infer_dir=args.from_infer,
+                data_yaml=str(data_yaml),
+                split=getattr(config, "split", "val"),
+                config=config,
+                run=run,
+                merger=merger,
+            )
+        elif args.model:
             # 单模型评估
             from od_platform.model_eval import evaluate_model
             result = evaluate_model(

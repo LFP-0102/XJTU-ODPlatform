@@ -350,4 +350,68 @@ def compare_models(*, config: Any, data_yaml: Path, run: RunContext,
     return ComparisonResult(success=True, run_id=run.run_id, report=report, message=msg)
 
 
-__all__ = ["EvalResult", "ComparisonResult", "evaluate_model", "compare_models"]
+def evaluate_from_infer(
+    *,
+    infer_dir: str | Path,
+    data_yaml: str | Path,
+    split: str = "val",
+    config: Any = None,
+    run: RunContext | None = None,
+    merger: Any = None,
+    write_report: bool = True,
+    save_history: bool = True,
+    enhanced_analysis: bool = True,
+) -> EvalResult:
+    """从 odp-infer 推理输出评估模型质量.
+
+    跳过 model.val(), 而是读取推理产出的预测标签 (--save-txt) 与
+    数据集 ground truth 做 IoU 匹配, 用 ap_per_class 计算指标,
+    生成与 evaluate_model 完全一致的报告.
+
+    Args:
+        infer_dir:     odp-infer 输出目录 (runs/inference/<run_id>/)
+        data_yaml:     数据集配置 yaml
+        split:         数据集划分 (val / test)
+        config:        YOLOValConfig (可选, 仅用于审计)
+        run:           RunContext, None 则自动创建
+        merger:        配置溯源器 (可选)
+        write_report:  是否落盘 report.json / result.csv / report.md
+        save_history:  是否追加评估历史
+        enhanced_analysis: 是否生成增强 Markdown 分析
+
+    Returns:
+        EvalResult (永不抛, 错误打包进 EvalResult)
+    """
+    from od_platform.model_eval.infer_eval import evaluate_infer_results
+
+    def _run(r: RunContext) -> EvalResult:
+        try:
+            return evaluate_infer_results(
+                infer_dir=infer_dir,
+                data_yaml=data_yaml,
+                split=split,
+                config=config,
+                run=r,
+                merger=merger,
+                write_report=write_report,
+                save_history=save_history,
+                enhanced_analysis=enhanced_analysis,
+            )
+        except Exception as e:
+            logger.exception("从推理结果评估失败")
+            return EvalResult(
+                success=False,
+                run_id=r.run_id if hasattr(r, "run_id") else "unknown",
+                message=f"评估失败: {e}",
+            )
+
+    if run is not None:
+        return _run(run)
+    with RunContext("evaluation", sub_dir="infer") as r:
+        return _run(r)
+
+
+__all__ = [
+    "EvalResult", "ComparisonResult",
+    "evaluate_model", "compare_models", "evaluate_from_infer",
+]

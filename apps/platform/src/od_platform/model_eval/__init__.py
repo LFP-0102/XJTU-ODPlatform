@@ -40,6 +40,7 @@ from od_platform.model_eval.metrics import EvalMetrics
 from od_platform.model_eval.report import EvalReport, ComparisonReport
 from od_platform.model_eval.service import (
     EvalResult, ComparisonResult, evaluate_model, compare_models,
+    evaluate_from_infer,
 )
 
 __all__ = [
@@ -53,6 +54,7 @@ __all__ = [
     "ComparisonResult",
     "evaluate_model",
     "compare_models",
+    "evaluate_from_infer",
     # 分析
     "ConfusionAnalysis",
     "ClassRanking",
